@@ -688,6 +688,9 @@ function initSpeech(){
       setStatus('마이크 권한을 허용해주세요', 'bad');
       return;
     }
+    if(event.error === 'no-speech' && hasPendingSpeechText()){
+      scheduleImmediateStopEvaluation(200);
+    }
     if(event.error !== 'no-speech' && event.error !== 'aborted'){
       setStatus('음성 인식이 잠시 끊겼습니다. 다시 연결합니다', 'on');
     }
@@ -695,6 +698,9 @@ function initSpeech(){
 
   recognition.onend = () => {
     setMicUi(false);
+    if(!resettingSpeech && micOn && hasPendingSpeechText()){
+      scheduleImmediateStopEvaluation(250);
+    }
     if(shouldRestart && micOn){
       setTimeout(() => {
         if(shouldRestart && micOn){
@@ -739,6 +745,18 @@ function stopMic(){
 function scheduleSpeechStopCheck(){
   clearTimeout(speechStopTimer);
   speechStopTimer = setTimeout(checkIfSpeechStopped, SPEECH_STOP_DELAY_MS);
+}
+
+function hasPendingSpeechText(){
+  return Boolean((finalText || lastInterimText || lastSpeechText || '').trim());
+}
+
+function scheduleImmediateStopEvaluation(delay=250){
+  clearTimeout(speechStopTimer);
+  speechStopTimer = setTimeout(() => {
+    if(!micOn || resettingSpeech) return;
+    if(hasPendingSpeechText()) evaluateCurrentTranscript();
+  }, delay);
 }
 
 function checkIfSpeechStopped(){
