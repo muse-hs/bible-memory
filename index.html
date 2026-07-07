@@ -608,6 +608,11 @@ function compareWithAnswer(normalizedTranscript){
   });
 }
 
+function isPotentialPrefixOfAnswer(norm){
+  if(!norm) return true;
+  return FULL_SEGMENTS.some(segment => segment.norm.startsWith(norm));
+}
+
 // 브라우저 콘솔에서 runNormalizationExamples()를 호출해 보정 예시를 빠르게 확인할 수 있다.
 // 통과: "물에 희 행하지 아니하며" -> "무례히 행하지 아니하며"
 // 통과: "우리는깽 가리가 되고" -> "울리는 꽹과리가 되고"
@@ -744,13 +749,11 @@ function checkSpeech(raw, isInterim, gotFinal=false){
   }
 
   clearTimeout(wrongTimer);
-  if(isInterim || !gotFinal){
+  if(isInterim || !gotFinal || isPotentialPrefixOfAnswer(norm)){
     setStatus('듣는 중입니다. 이어서 말하세요', 'on');
     return;
   }
-  wrongTimer = setTimeout(() => {
-    if(micOn && liveNorm === norm) handleWrong();
-  }, 1200);
+  handleWrong();
 }
 
 function handleWrong(){
