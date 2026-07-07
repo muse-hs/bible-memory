@@ -311,13 +311,18 @@ let micOn = false;
 let shouldRestart = false;
 let resettingSpeech = false;
 let finalText = '';
+let lastInterimText = '';
+let lastSpeechText = '';
 let lastChecked = '';
 let timerId = null;
 let startedAt = null;
 let audioCtx = null;
 let wrongTimer = null;
+let speechStopTimer = null;
 let clearMessageTimer = null;
 let liveNorm = '';
+let lastSpeechTime = 0;
+const SPEECH_STOP_DELAY_MS = 1800;
 
 function normalizeKoreanText(text){
   return text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]/g,'').toLowerCase();
@@ -666,7 +671,11 @@ function initSpeech(){
       }
       else interim += text;
     }
-    checkSpeech(finalText + interim, Boolean(interim), gotFinal);
+    lastInterimText = interim;
+    lastSpeechText = (finalText + interim).trim();
+    lastSpeechTime = Date.now();
+    scheduleSpeechStopCheck();
+    checkSpeech(lastSpeechText, Boolean(interim), gotFinal);
   };
 
   recognition.onerror = event => {
@@ -720,13 +729,34 @@ function stopMic(){
   shouldRestart = false;
   resettingSpeech = false;
   clearTimeout(wrongTimer);
+  clearTimeout(speechStopTimer);
   stopTimer();
   try{ recognition && recognition.stop(); } catch(e){}
   setMicUi(false);
   setStatus('마이크가 꺼졌습니다', '');
 }
 
-function checkSpeech(raw, isInterim, gotFinal=false){
+function scheduleSpeechStopCheck(){
+  clearTimeout(speechStopTimer);
+  speechStopTimer = setTimeout(checkIfSpeechStopped, SPEECH_STOP_DELAY_MS);
+}
+
+function checkIfSpeechStopped(){
+  if(!micOn || resettingSpeech) return;
+  if(Date.now() - lastSpeechTime < SPEECH_STOP_DELAY_MS - 50){
+    scheduleSpeechStopCheck();
+    return;
+  }
+  evaluateCurrentTranscript();
+}
+
+function evaluateCurrentTranscript(){
+  const text = (finalText || lastInterimText || lastSpeechText || '').trim();
+  if(!text) return;
+  checkSpeech(text, false, true, true);
+}
+
+function checkSpeech(raw, isInterim, gotFinal=false, forceDecision=false){
   const text = raw.trim();
   const normalizedTranscript = normalizeTranscriptByVerse(text);
   const norm = normalizedTranscript.norm;
@@ -738,18 +768,19 @@ function checkSpeech(raw, isInterim, gotFinal=false){
 
   setRecognized(normalizedTranscript.text || text, '');
   if(norm.length < 4) return;
-  if(norm === lastChecked) return;
+  if(!forceDecision && norm === lastChecked) return;
   lastChecked = norm;
 
   if(compareWithAnswer(normalizedTranscript)){
     clearTimeout(wrongTimer);
+    clearTimeout(speechStopTimer);
     setStatus('맞게 말하고 있습니다', 'ok');
     setRecognized(normalizedTranscript.text || text, 'ok');
     return;
   }
 
   clearTimeout(wrongTimer);
-  if(isInterim || !gotFinal || isPotentialPrefixOfAnswer(norm)){
+  if(!forceDecision && (isInterim || !gotFinal || isPotentialPrefixOfAnswer(norm))){
     setStatus('듣는 중입니다. 이어서 말하세요', 'on');
     return;
   }
@@ -757,12 +788,13 @@ function checkSpeech(raw, isInterim, gotFinal=false){
 }
 
 function handleWrong(){
-  playWarning();
+  try{ playWarning(); }catch(e){}
   clearAllSpeechImmediately();
 }
 
 function clearAllSpeechImmediately(){
   clearTimeout(wrongTimer);
+  clearTimeout(speechStopTimer);
   resetBufferOnly();
   setStatus('틀렸습니다. 다시 말하세요', 'bad');
   setRecognized('다시 시작하세요', 'bad');
@@ -788,12 +820,16 @@ function clearAllSpeechImmediately(){
 
 function resetBufferOnly(){
   finalText = '';
+  lastInterimText = '';
+  lastSpeechText = '';
   lastChecked = '';
   liveNorm = '';
+  lastSpeechTime = 0;
 }
 
 function clearAttempt(){
   clearTimeout(wrongTimer);
+  clearTimeout(speechStopTimer);
   resetBufferOnly();
   if(micOn && recognition){
     resettingSpeech = true;
@@ -818,6 +854,7 @@ function resetAll(){
   startedAt = null;
   clearTimeout(clearMessageTimer);
   clearTimeout(wrongTimer);
+  clearTimeout(speechStopTimer);
   $('timer').textContent = '00:00';
   setStatus('마이크를 누르면 시작합니다', '');
   setRecognized('말씀을 말하면 여기에 짧게 표시됩니다', 'empty');
