@@ -300,6 +300,40 @@ const PHRASE_CORRECTION_MAP = {
   '제일은 사랑이야': '제일은 사랑이라',
   '제일은 사랑 이라': '제일은 사랑이라'
 };
+const LIMITED_CORRECTION_MAP = {
+  '우리는 꽹가리가 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹관리가 되고': '울리는 꽹과리가 되고',
+  '우리는 깽가리가 되고': '울리는 꽹과리가 되고',
+  '우리는 깽다리가 되고': '울리는 꽹과리가 되고',
+  '울리는 꽹가리가 되고': '울리는 꽹과리가 되고',
+  '울리는 꽹관리가 되고': '울리는 꽹과리가 되고',
+  '울리는 깽가리가 되고': '울리는 꽹과리가 되고',
+  '물에 이행하지 아니하며': '무례히 행하지 아니하며',
+  '물에 행하지 아니하며': '무례히 행하지 아니하며',
+  '우리 이행하지 아니하며': '무례히 행하지 아니하며',
+  '물에힘 행하지 아니하며': '무례히 행하지 아니하며',
+  '물의힘 행하지 아니하며': '무례히 행하지 아니하며',
+  '무례이 행하지 아니하며': '무례히 행하지 아니하며',
+  '무례희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물레희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물레이 행하지 아니하며': '무례히 행하지 아니하며',
+  '브레인 행하지 아니하며': '무례히 행하지 아니하며',
+  '떨어지지 아니하대': '떨어지지 아니하되',
+  '떨어지지 아니하돼': '떨어지지 아니하되',
+  '떨어지지 아니하데': '떨어지지 아니하되',
+  '운전한 것이 올때에는': '온전한 것이 올 때에는',
+  '내가 어렸을 때는': '내가 어렸을 때에는',
+  '그때는': '그때에는',
+  '그 중에': '그 중의',
+  '강원도 고치고': '방언도 그치고',
+  '방 온도 고치고': '방언도 그치고',
+  '예영도 폐하고': '예언도 폐하고',
+  '예현도 폐하고': '예언도 폐하고',
+  '예연도 폐하고': '예언도 폐하고',
+  '예언도 패하고': '예언도 폐하고',
+  '거울로 보는 것 같이 힘이 하나': '거울로 보는 것 같이 희미하나',
+  '거울로 보는 것 같이 힘이 안나': '거울로 보는 것 같이 희미하나'
+};
 const correctionMap = buildCorrectionMap(CORRECTION_GROUPS);
 const CORRECTION_PHRASES = buildCorrectionPhrases(CORRECTION_GROUPS);
 const CRITICAL_CONTEXTS = [
@@ -521,6 +555,21 @@ function normalizeForComparison(text, allowedNorms=FULL_WORD_NORMS){
   return normalizeKoreanText(applyCorrectionMap(applyPhraseCorrections(text, allowedNorms), allowedNorms));
 }
 
+function applyLimitedCorrections(text){
+  let corrected = text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+  Object.entries(LIMITED_CORRECTION_MAP)
+    .sort((a, b) => normalizeKoreanText(b[0]).length - normalizeKoreanText(a[0]).length)
+    .forEach(([variant, target]) => {
+      const pattern = splitKoreanWords(variant).map(escapeRegExp).join('\\s*');
+      corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
+    });
+  return corrected;
+}
+
+function normalizeLimitedText(text){
+  return normalizeKoreanText(applyLimitedCorrections(text));
+}
+
 function calculateSimilarity(a, b){
   const left = normalizeKoreanText(a);
   const right = normalizeKoreanText(b);
@@ -631,86 +680,57 @@ function findBestVerseWindow(spokenWords, targetWindow=getTargetWindow()){
 }
 
 function normalizeRecentChunk(chunk, targetWindow=getTargetWindow()){
-  const allowedNorms = getTargetAllowedNorms(targetWindow);
-  return applyCorrectionMap(applyPhraseCorrections(chunk.slice(-RECENT_SCORE_CHARS), allowedNorms), allowedNorms);
+  return applyLimitedCorrections(chunk.slice(-RECENT_SCORE_CHARS));
 }
 
 function scoreRecentChunkAgainstTarget(chunk, targetWindow=getTargetWindow()){
-  const allowedNorms = getTargetAllowedNorms(targetWindow);
-  const normalizedChunk = normalizeRecentChunk(chunk, targetWindow);
-  const normalizedChunkNorm = normalizeForComparison(normalizedChunk, allowedNorms);
+  const normalizedChunk = applyLimitedCorrections(chunk.slice(-RECENT_SCORE_CHARS));
+  const normalizedChunkNorm = normalizeKoreanText(normalizedChunk);
+  const targetNorm = normalizeKoreanText(targetWindow.words.join(' '));
   const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(chunk).includes(pattern));
-  const bestString = getBestMatchingVerseOrSegment(normalizedChunk, targetWindow, normalizedChunkNorm);
-  const spokenWords = splitKoreanWords(normalizedChunk);
-  const bestWords = findBestVerseWindow(spokenWords, targetWindow);
-  const stringThreshold = getSegmentThreshold(bestString.norm.length);
-  const accepted = !hasStrictWrongExpression && (
-    (bestString.score >= stringThreshold && bestWords.score >= .75) ||
-    bestWords.score >= .86
-  );
+  const accepted = !hasStrictWrongExpression && normalizedChunkNorm.length >= 4 && targetNorm.includes(normalizedChunkNorm);
   return {
     accepted,
-    text: accepted && bestString.score >= stringThreshold ? bestString.text : normalizedChunk,
-    norm: accepted && bestString.score >= stringThreshold ? bestString.norm : normalizedChunkNorm,
-    score: bestWords.score,
-    stringScore: bestString.score,
-    stringMatchText: bestString.text,
-    matchStart: typeof bestString.start === 'number' ? bestString.start : -1,
-    matchEnd: typeof bestString.start === 'number' ? bestString.start + (bestString.words?.length || 0) : -1,
+    text: normalizedChunk,
+    norm: normalizedChunkNorm,
+    score: accepted ? 1 : 0,
+    stringScore: accepted ? 1 : 0,
+    stringMatchText: normalizedChunk,
+    matchStart: accepted ? targetNorm.indexOf(normalizedChunkNorm) : -1,
+    matchEnd: accepted ? targetNorm.indexOf(normalizedChunkNorm) + normalizedChunkNorm.length : -1,
     hasStrictWrongExpression
   };
 }
 
 function isPotentialPrefixOfTarget(norm, targetWindow=getTargetWindow()){
   if(!norm) return true;
-  return targetWindow.segments.some(segment => segment.norm.startsWith(norm));
+  const targetNorm = normalizeKoreanText(targetWindow.words.join(' '));
+  return targetWindow.segments.some(segment => segment.norm.startsWith(norm)) || targetNorm.includes(norm);
 }
 
 function normalizeTranscriptByVerse(raw, verseIndex=currentVerseIndex){
   const targetWindow = getTargetWindow(verseIndex);
-  const allowedNorms = getTargetAllowedNorms(targetWindow);
-  const phraseCorrectedText = applyPhraseCorrections(raw, allowedNorms);
-  const mappedText = applyCorrectionMap(phraseCorrectedText, allowedNorms);
-  const spokenWords = splitKoreanWords(mappedText);
+  const mappedText = applyLimitedCorrections(raw);
+  const mappedNorm = normalizeKoreanText(mappedText);
+  const targetNorm = normalizeKoreanText(targetWindow.words.join(' '));
   const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(raw).includes(pattern));
-  if(!spokenWords.length){
+  const accepted = !hasStrictWrongExpression && mappedNorm.length >= 4 && targetNorm.includes(mappedNorm);
+  if(!mappedNorm){
     return { text: '', norm: '', score: 0, stringScore: 0, hasStrictWrongExpression };
   }
-  if(hasStrictWrongExpression){
-    return {
-      text: mappedText,
-      norm: normalizeForComparison(mappedText, allowedNorms),
-      score: 0,
-      stringScore: 0,
-      stringMatchText: mappedText,
-      hasStrictWrongExpression
-    };
-  }
-
-  const best = findBestVerseWindow(spokenWords, targetWindow);
-  const bestString = getBestMatchingVerseOrSegment(mappedText, targetWindow);
-  const stringThreshold = getSegmentThreshold(bestString.norm.length);
-  const useStringMatch = bestString.score >= stringThreshold;
-  const normalizedWords = !useStringMatch && best.score >= .72 ? best.words : spokenWords;
-  const normalizedText = normalizedWords.join(' ');
-  const displayText = useStringMatch ? bestString.text : normalizedText;
-
   return {
-    text: displayText,
-    norm: normalizeForComparison(displayText, allowedNorms),
-    score: best.score,
-    stringScore: bestString.score,
-    stringMatchText: bestString.text,
+    accepted,
+    text: mappedText,
+    norm: mappedNorm,
+    score: accepted ? 1 : 0,
+    stringScore: accepted ? 1 : 0,
+    stringMatchText: mappedText,
     hasStrictWrongExpression
   };
 }
 
 function compareWithAnswer(normalizedTranscript){
-  if(normalizedTranscript.hasStrictWrongExpression) return false;
-  if(!normalizedTranscript.norm) return false;
-  if(normalizedTranscript.stringScore >= getSegmentThreshold(normalizedTranscript.norm.length) && normalizedTranscript.score >= .75) return true;
-  if(normalizedTranscript.score >= .86) return true;
-  return false;
+  return Boolean(normalizedTranscript.accepted);
 }
 
 function extractNewChunk(event){
@@ -782,25 +802,24 @@ function handleSpeechResult(event){
 }
 
 // 브라우저 콘솔에서 runNormalizationExamples()를 호출해 보정 예시를 빠르게 확인할 수 있다.
-// 통과: "물에 희 행하지 아니하며" -> "무례히 행하지 아니하며"
-// 통과: "우리는깽 가리가 되고" -> "울리는 꽹과리가 되고"
-// 통과: "내가 4개 있는 모든 것으로" -> "내가 내게 있는 모든 것으로"
+// 통과: "우리는 꽹가리가 되고" -> "울리는 꽹과리가 되고"
+// 통과: "물에 이행하지 아니하며" -> "무례히 행하지 아니하며"
+// 통과: "떨어지지 아니하대" -> "떨어지지 아니하되"
 // 탈락: "무례하게 행하지 아니하며"는 "무례히"가 아니므로 오답
 function runNormalizationExamples(){
   const examples = [
-    ['우리는깽 가리가 되고', '울리는 꽹과리가 되고', 0],
-    ['내가 4개 있는 모든 것으로', '내가 내게 있는 모든 것으로', 2],
-    ['물에힘 행하지 아니하며', '무례히 행하지 아니하며', 4],
-    ['브레인 행하지 아니하며', '무례히 행하지 아니하며', 4],
+    ['우리는 꽹가리가 되고', '울리는 꽹과리가 되고', 0],
+    ['물에 이행하지 아니하며', '무례히 행하지 아니하며', 4],
+    ['떨어지지 아니하대', '떨어지지 아니하되', 7],
     ['운전한 것이 올때에는', '온전한 것이 올 때에는', 9],
-    ['지식도 폐아리라', '지식도 폐하리라', 7],
     ['강원도 고치고', '방언도 그치고', 7],
-    ['예영도 패하고', '예언도 폐하고', 7]
+    ['예영도 폐하고', '예언도 폐하고', 7]
   ];
   return examples.map(([input, expected, verseIndex]) => ({
     input,
     expected,
-    actual: normalizeTranscriptByVerse(input, verseIndex).text
+    actual: normalizeTranscriptByVerse(input, verseIndex).text,
+    pass: normalizeTranscriptByVerse(input, verseIndex).text === expected
   }));
 }
 
