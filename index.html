@@ -301,13 +301,30 @@ const PHRASE_CORRECTION_MAP = {
   '제일은 사랑 이라': '제일은 사랑이라'
 };
 const LIMITED_CORRECTION_MAP = {
+  '우리는깽 가리가 되고': '울리는 꽹과리가 되고',
   '우리는 꽹가리가 되고': '울리는 꽹과리가 되고',
   '우리는 꽹관리가 되고': '울리는 꽹과리가 되고',
   '우리는 깽가리가 되고': '울리는 꽹과리가 되고',
   '우리는 깽다리가 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹가리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹관리가 되고': '울리는 꽹과리가 되고',
   '울리는 깽가리가 되고': '울리는 꽹과리가 되고',
+  '울리는 깽다리가 되고': '울리는 꽹과리가 되고',
+  '울리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
+  '깽가리가 되고': '꽹과리가 되고',
+  '깽다리가 되고': '꽹과리가 되고',
+  '꽹가리가 되고': '꽹과리가 되고',
+  '꽹관리가 되고': '꽹과리가 되고',
+  '깽과이가 되고': '꽹과리가 되고',
+  '우리는깽': '울리는 꽹',
+  '우리는 깽': '울리는 꽹',
+  '우리는 꽹': '울리는 꽹',
+  '깽가리': '꽹과리',
+  '깽다리': '꽹과리',
+  '꽹가리': '꽹과리',
+  '꽹관리': '꽹과리',
+  '깽과이': '꽹과리',
   '물에 이행하지 아니하며': '무례히 행하지 아니하며',
   '물에 행하지 아니하며': '무례히 행하지 아니하며',
   '우리 이행하지 아니하며': '무례히 행하지 아니하며',
@@ -316,23 +333,69 @@ const LIMITED_CORRECTION_MAP = {
   '무례이 행하지 아니하며': '무례히 행하지 아니하며',
   '무례희 행하지 아니하며': '무례히 행하지 아니하며',
   '물레희 행하지 아니하며': '무례히 행하지 아니하며',
+  '무대희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물례희 행하지 아니하며': '무례히 행하지 아니하며',
   '물레이 행하지 아니하며': '무례히 행하지 아니하며',
   '브레인 행하지 아니하며': '무례히 행하지 아니하며',
+  '구래힘 행하지 아니하며': '무례히 행하지 아니하며',
+  '울애기 행하지 아니하며': '무례히 행하지 아니하며',
+  '울레희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물랭이 행하지 아니하며': '무례히 행하지 아니하며',
+  '무레히 행하지 아니하며': '무례히 행하지 아니하며',
+  '무래히 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에히 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에힘': '무례히',
+  '물의힘': '무례히',
+  '무례희': '무례히',
+  '물레희': '무례히',
+  '무대희': '무례히',
+  '물례희': '무례히',
+  '물레이': '무례히',
+  '브레인': '무례히',
+  '구래힘': '무례히',
+  '울애기': '무례히',
+  '울레희': '무례히',
+  '물랭이': '무례히',
+  '무례이': '무례히',
+  '무레히': '무례히',
+  '무래히': '무례히',
+  '물에히': '무례히',
+  '물에희': '무례히',
   '떨어지지 아니하대': '떨어지지 아니하되',
   '떨어지지 아니하돼': '떨어지지 아니하되',
   '떨어지지 아니하데': '떨어지지 아니하되',
+  '떨어지지 아니 하대': '떨어지지 아니하되',
+  '떨어지지 아니 하돼': '떨어지지 아니하되',
   '운전한 것이 올때에는': '온전한 것이 올 때에는',
+  '운전한 것이 올 때에는': '온전한 것이 올 때에는',
   '내가 어렸을 때는': '내가 어렸을 때에는',
   '그때는': '그때에는',
   '그 중에': '그 중의',
+  '폐하이다': '폐하리라',
+  '최하이라': '폐하리라',
+  '대하이라': '폐하리라',
+  '최하리다': '폐하리라',
+  '폐아리라': '폐하리라',
+  '폐아이라': '폐하리라',
+  '폐이다': '폐하리라',
+  '폐할이라': '폐하리라',
   '강원도 고치고': '방언도 그치고',
   '방 온도 고치고': '방언도 그치고',
+  '방언도 고치고': '방언도 그치고',
   '예영도 폐하고': '예언도 폐하고',
   '예현도 폐하고': '예언도 폐하고',
   '예연도 폐하고': '예언도 폐하고',
   '예언도 패하고': '예언도 폐하고',
+  '예영도 패하고': '예언도 폐하고',
+  '예현도 패하고': '예언도 폐하고',
+  '예연도 패하고': '예언도 폐하고',
   '거울로 보는 것 같이 힘이 하나': '거울로 보는 것 같이 희미하나',
-  '거울로 보는 것 같이 힘이 안나': '거울로 보는 것 같이 희미하나'
+  '거울로 보는 것 같이 힘이 안나': '거울로 보는 것 같이 희미하나',
+  '거울로 보는 것 같이 힘이 안 나': '거울로 보는 것 같이 희미하나',
+  '거울로 보는 것 같이 잠이 안와': '거울로 보는 것 같이 희미하나',
+  '내가 4개 있는 모든 것으로': '내가 내게 있는 모든 것으로',
+  '내가 네게 있는 모든 것으로': '내가 내게 있는 모든 것으로'
 };
 const correctionMap = buildCorrectionMap(CORRECTION_GROUPS);
 const CORRECTION_PHRASES = buildCorrectionPhrases(CORRECTION_GROUPS);
@@ -563,6 +626,7 @@ function applyLimitedCorrections(text){
       const pattern = splitKoreanWords(variant).map(escapeRegExp).join('\\s*');
       corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
     });
+  corrected = corrected.replace(/((?:울리는\s+)?(?:꽹과리|깽가리|깽다리|꽹가리|꽹관리|깽과이)가?)\s+대구/gi, '$1 되고');
   return corrected;
 }
 
@@ -686,45 +750,48 @@ function normalizeRecentChunk(chunk, targetWindow=getTargetWindow()){
 function scoreRecentChunkAgainstTarget(chunk, targetWindow=getTargetWindow()){
   const normalizedChunk = applyLimitedCorrections(chunk.slice(-RECENT_SCORE_CHARS));
   const normalizedChunkNorm = normalizeKoreanText(normalizedChunk);
-  const targetNorm = normalizeKoreanText(targetWindow.words.join(' '));
   const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(chunk).includes(pattern));
-  const accepted = !hasStrictWrongExpression && normalizedChunkNorm.length >= 4 && targetNorm.includes(normalizedChunkNorm);
+  const exactSegment = !hasStrictWrongExpression && normalizedChunkNorm.length >= 2
+    ? targetWindow.segments.find(segment => segment.norm === normalizedChunkNorm)
+    : null;
   return {
-    accepted,
+    accepted: Boolean(exactSegment),
     text: normalizedChunk,
     norm: normalizedChunkNorm,
-    score: accepted ? 1 : 0,
-    stringScore: accepted ? 1 : 0,
+    score: exactSegment ? 1 : 0,
+    stringScore: exactSegment ? 1 : 0,
     stringMatchText: normalizedChunk,
-    matchStart: accepted ? targetNorm.indexOf(normalizedChunkNorm) : -1,
-    matchEnd: accepted ? targetNorm.indexOf(normalizedChunkNorm) + normalizedChunkNorm.length : -1,
+    matchStart: exactSegment ? exactSegment.start : -1,
+    matchEnd: exactSegment ? exactSegment.start + exactSegment.words.length : -1,
     hasStrictWrongExpression
   };
 }
 
 function isPotentialPrefixOfTarget(norm, targetWindow=getTargetWindow()){
   if(!norm) return true;
-  const targetNorm = normalizeKoreanText(targetWindow.words.join(' '));
-  return targetWindow.segments.some(segment => segment.norm.startsWith(norm)) || targetNorm.includes(norm);
+  return targetWindow.segments.some(segment => segment.norm.startsWith(norm));
 }
 
 function normalizeTranscriptByVerse(raw, verseIndex=currentVerseIndex){
   const targetWindow = getTargetWindow(verseIndex);
   const mappedText = applyLimitedCorrections(raw);
   const mappedNorm = normalizeKoreanText(mappedText);
-  const targetNorm = normalizeKoreanText(targetWindow.words.join(' '));
   const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(raw).includes(pattern));
-  const accepted = !hasStrictWrongExpression && mappedNorm.length >= 4 && targetNorm.includes(mappedNorm);
+  const exactSegment = !hasStrictWrongExpression && mappedNorm.length >= 2
+    ? targetWindow.segments.find(segment => segment.norm === mappedNorm)
+    : null;
   if(!mappedNorm){
     return { text: '', norm: '', score: 0, stringScore: 0, hasStrictWrongExpression };
   }
   return {
-    accepted,
+    accepted: Boolean(exactSegment),
     text: mappedText,
     norm: mappedNorm,
-    score: accepted ? 1 : 0,
-    stringScore: accepted ? 1 : 0,
+    score: exactSegment ? 1 : 0,
+    stringScore: exactSegment ? 1 : 0,
     stringMatchText: mappedText,
+    matchStart: exactSegment ? exactSegment.start : -1,
+    matchEnd: exactSegment ? exactSegment.start + exactSegment.words.length : -1,
     hasStrictWrongExpression
   };
 }
