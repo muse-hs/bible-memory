@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고린도전서 13장 암송 체크</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;600;800&display=swap');
+  :root{
+    --ink:#1a1714;--paper:#f7f3ec;--surface:#fffdf8;--line:#e3d8c7;
+    --gold:#d4a84b;--muted:#827666;--mic:#c0392b;
+    --ok:#2f7a4f;--ok-bg:#eef8f1;--bad:#9a392b;--bad-bg:#fff0ec;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh;background:var(--paper);color:var(--ink);
+    font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .app{
+    width:min(680px,100%);background:var(--surface);border:1px solid var(--line);
+    border-radius:18px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:18px;
+  }
+  .title{text-align:center}
+  .title h1{font-family:'Noto Serif KR',serif;font-size:24px;color:var(--ink);margin-bottom:5px}
+  .title p{font-size:13px;color:var(--muted)}
+  .mic-ring{
+    width:132px;height:132px;border:0;border-radius:50%;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 6px 24px rgba(0,0,0,.2);transition:transform .15s, background .2s;
+  }
+  .mic-ring:hover{transform:scale(1.035)}
+  .mic-ring.listening{background:var(--mic);animation:pulse 1.2s infinite}
+  .mic-icon{font-size:50px;color:var(--gold);user-select:none}
+  .mic-ring.listening .mic-icon{color:#fff}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.38)}
+    50%{box-shadow:0 0 0 24px rgba(192,57,43,0)}
+  }
+  .timer{
+    font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;
+    color:var(--ink);letter-spacing:0;
+  }
+  .status{
+    width:100%;min-height:58px;border-radius:12px;padding:15px 18px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    font-size:18px;font-weight:800;line-height:1.5;background:var(--paper);color:var(--muted);
+  }
+  .status.on{color:var(--mic)}
+  .status.ok{background:var(--ok-bg);color:var(--ok)}
+  .status.bad{background:var(--bad-bg);color:var(--bad)}
+  .recognized{
+    width:100%;min-height:96px;border:1.5px dashed var(--line);border-radius:12px;
+    background:var(--paper);padding:18px;font-family:'Noto Serif KR',serif;
+    font-size:20px;line-height:1.8;text-align:center;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .recognized.empty{font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#b7a894}
+  .recognized.ok{border-color:#acd8bb;background:var(--ok-bg);color:var(--ok)}
+  .recognized.bad{border-color:#e8b7aa;background:var(--bad-bg);color:var(--bad)}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .small-btn{
+    border:1px solid var(--line);background:transparent;color:var(--muted);
+    border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;
+  }
+  .small-btn:hover{background:var(--line);color:var(--ink)}
+  .no-support{display:none;color:var(--bad);font-size:14px;text-align:center;line-height:1.7}
+  @media(max-width:560px){
+    body{padding:14px}.app{padding:22px}.mic-ring{width:116px;height:116px}
+    .timer{font-size:30px}.status{font-size:16px}.recognized{font-size:18px}
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="title">
+    <h1>고린도전서 13장</h1>
+    <p>계속 암송하세요. 틀리면 소리로 알려주고 바로 다시 듣습니다.</p>
+  </div>
+
+  <button class="mic-ring" id="micBtn" onclick="toggleMic()" aria-label="마이크 시작">
+    <span class="mic-icon">🎙️</span>
+  </button>
+
+  <div class="timer" id="timer">00:00</div>
+  <div class="status" id="status">마이크를 누르면 시작합니다</div>
+  <div class="recognized empty" id="recognized">말씀을 말하면 여기에 짧게 표시됩니다</div>
+
+  <div class="controls">
+    <button class="small-btn" onclick="clearAttempt()">인식문장 지우기</button>
+    <button class="small-btn" onclick="resetAll()">처음부터</button>
+  </div>
+
+  <div class="no-support" id="noSupport">이 브라우저는 음성인식을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 사용해주세요.</div>
+</main>
+
+<script>
+const FULL = `내가 사람의 방언과 천사의 말을 할지라도 사랑이 없으면 소리 나는 구리와 울리는 꽹과리가 되고 내가 예언하는 능력이 있어 모든 비밀과 모든 지식을 알고 또 산을 옮길 만한 모든 믿음이 있을지라도 사랑이 없으면 내가 아무 것도 아니요 내가 내게 있는 모든 것으로 구제하고 또 내 몸을 불사르게 내줄지라도 사랑이 없으면 내게 아무 유익이 없느니라 사랑은 오래 참고 사랑은 온유하며 시기하지 아니하며 사랑은 자랑하지 아니하며 교만하지 아니하며 무례히 행하지 아니하며 자기의 유익을 구하지 아니하며 성내지 아니하며 악한 것을 생각하지 아니하며 불의를 기뻐하지 아니하며 진리와 함께 기뻐하고 모든 것을 참으며 모든 것을 믿으며 모든 것을 바라며 모든 것을 견디느니라 사랑은 언제까지나 떨어지지 아니하되 예언도 폐하고 방언도 그치고 지식도 폐하리라 우리는 부분적으로 알고 부분적으로 예언하니 온전한 것이 올 때에는 부분적으로 하던 것이 폐하리라 내가 어렸을 때에는 말하는 것이 어린 아이와 같고 깨닫는 것이 어린 아이와 같고 생각하는 것이 어린 아이와 같다가 장성한 사람이 되어서는 어린 아이의 일을 버렸노라 우리가 지금은 거울로 보는 것 같이 희미하나 그 때에는 얼굴과 얼굴을 대하여 볼 것이요 지금은 내가 부분적으로 아나 그 때에는 주께서 나를 아신 것 같이 내가 온전히 알리라 그런즉 믿음, 소망, 사랑, 이 세 가지는 항상 있을 것인데 그 중의 제일은 사랑이라`;
+const $ = id => document.getElementById(id);
+const FULL_NORM = normalize(FULL);
+
+let recognition = null;
+let micOn = false;
+let shouldRestart = false;
+let resettingSpeech = false;
+let finalText = '';
+let lastChecked = '';
+let timerId = null;
+let startedAt = null;
+let audioCtx = null;
+let wrongTimer = null;
+let clearMessageTimer = null;
+let liveNorm = '';
+
+function normalize(text){
+  return text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]/g,'').toLowerCase();
+}
+
+function initSpeech(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    $('noSupport').style.display = 'block';
+    setStatus('이 브라우저는 음성인식을 지원하지 않습니다', 'bad');
+    return false;
+  }
+
+  recognition = new SR();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    resettingSpeech = false;
+    setMicUi(true);
+  };
+
+  recognition.onresult = event => {
+    if(!micOn || resettingSpeech) return;
+    let interim = '';
+    let gotFinal = false;
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      const text = event.results[i][0].transcript;
+      if(event.results[i].isFinal){
+        finalText += text;
+        gotFinal = true;
+      }
+      else interim += text;
+    }
+    checkSpeech(finalText + interim, Boolean(interim), gotFinal);
+  };
+
+  recognition.onerror = event => {
+    if(event.error === 'not-allowed'){
+      micOn = false;
+      shouldRestart = false;
+      resettingSpeech = false;
+      stopTimer();
+      setMicUi(false);
+      setStatus('마이크 권한을 허용해주세요', 'bad');
+      return;
+    }
+    if(event.error !== 'no-speech' && event.error !== 'aborted'){
+      setStatus('음성 인식이 잠시 끊겼습니다. 다시 연결합니다', 'on');
+    }
+  };
+
+  recognition.onend = () => {
+    setMicUi(false);
+    if(shouldRestart && micOn){
+      setTimeout(() => {
+        if(shouldRestart && micOn){
+          try{ recognition.start(); } catch(e){}
+        }
+      }, resettingSpeech ? 180 : 300);
+    }
+  };
+  return true;
+}
+
+function toggleMic(){
+  if(micOn) stopMic();
+  else startMic();
+}
+
+function startMic(){
+  if(!recognition && !initSpeech()) return;
+  micOn = true;
+  shouldRestart = true;
+  startedAt = Date.now();
+  resetBufferOnly();
+  setStatus('듣는 중입니다. 다시 누르면 종료됩니다', 'on');
+  setRecognized('듣고 있습니다', 'empty');
+  startTimer();
+  setMicUi(true);
+  try{ recognition.start(); } catch(e){}
+}
+
+function stopMic(){
+  micOn = false;
+  shouldRestart = false;
+  resettingSpeech = false;
+  clearTimeout(wrongTimer);
+  stopTimer();
+  try{ recognition && recognition.stop(); } catch(e){}
+  setMicUi(false);
+  setStatus('마이크가 꺼졌습니다', '');
+}
+
+function checkSpeech(raw, isInterim, gotFinal=false){
+  const text = raw.trim();
+  const norm = normalize(text);
+  liveNorm = norm;
+  if(!norm){
+    setRecognized('듣고 있습니다', 'empty');
+    return;
+  }
+
+  setRecognized(text, '');
+  if(norm.length < 4) return;
+  if(norm === lastChecked) return;
+  lastChecked = norm;
+
+  if(FULL_NORM.includes(norm)){
+    clearTimeout(wrongTimer);
+    setStatus('맞게 말하고 있습니다', 'ok');
+    setRecognized(text, 'ok');
+    if(gotFinal && !isInterim){
+      setTimeout(() => {
+        if(micOn && normalize(finalText) === norm) resetBufferOnly();
+      }, 250);
+    }
+    return;
+  }
+
+  clearTimeout(wrongTimer);
+  wrongTimer = setTimeout(() => {
+    if(micOn && liveNorm === norm) handleWrong();
+  }, isInterim ? 450 : 80);
+}
+
+function handleWrong(){
+  playWarning();
+  clearAllSpeechImmediately();
+}
+
+function clearAllSpeechImmediately(){
+  clearTimeout(wrongTimer);
+  resetBufferOnly();
+  setStatus('틀렸습니다. 다시 말하세요', 'bad');
+  setRecognized('다시 시작하세요', 'bad');
+
+  // 브라우저 음성인식 내부 확정 결과까지 비우기 위해 세션을 짧게 재시작한다.
+  if(micOn && recognition){
+    resettingSpeech = true;
+    shouldRestart = true;
+    try{
+      if(recognition.abort) recognition.abort();
+      else recognition.stop();
+    }catch(e){}
+  }
+
+  clearTimeout(clearMessageTimer);
+  clearMessageTimer = setTimeout(() => {
+    if(micOn){
+      setStatus('듣는 중입니다. 다시 말하세요', 'on');
+      setRecognized('듣고 있습니다', 'empty');
+    }
+  }, 700);
+}
+
+function resetBufferOnly(){
+  finalText = '';
+  lastChecked = '';
+  liveNorm = '';
+}
+
+function clearAttempt(){
+  clearTimeout(wrongTimer);
+  resetBufferOnly();
+  if(micOn && recognition){
+    resettingSpeech = true;
+    shouldRestart = true;
+    try{
+      if(recognition.abort) recognition.abort();
+      else recognition.stop();
+    }catch(e){}
+  }
+  if(!micOn){
+    setStatus('마이크를 누르면 시작합니다', '');
+    setRecognized('말씀을 말하면 여기에 짧게 표시됩니다', 'empty');
+  } else {
+    setStatus('듣는 중입니다. 다시 말하세요', 'on');
+    setRecognized('듣고 있습니다', 'empty');
+  }
+}
+
+function resetAll(){
+  stopMic();
+  resetBufferOnly();
+  startedAt = null;
+  clearTimeout(clearMessageTimer);
+  clearTimeout(wrongTimer);
+  $('timer').textContent = '00:00';
+  setStatus('마이크를 누르면 시작합니다', '');
+  setRecognized('말씀을 말하면 여기에 짧게 표시됩니다', 'empty');
+}
+
+function setMicUi(on){
+  $('micBtn').classList.toggle('listening', on && micOn);
+  $('micBtn').setAttribute('aria-label', on && micOn ? '마이크 종료' : '마이크 시작');
+}
+
+function setStatus(text, type=''){
+  $('status').className = `status ${type}`.trim();
+  $('status').textContent = text;
+}
+
+function setRecognized(text, type=''){
+  $('recognized').className = `recognized ${type}`.trim();
+  $('recognized').textContent = text;
+}
+
+function startTimer(){
+  if(!startedAt) startedAt = Date.now();
+  clearInterval(timerId);
+  updateTimer();
+  timerId = setInterval(updateTimer, 250);
+}
+
+function stopTimer(){
+  clearInterval(timerId);
+  timerId = null;
+}
+
+function updateTimer(){
+  const total = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
+  $('timer').textContent = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+}
+
+function playWarning(){
+  playTone(220,.16,'sawtooth',.1);
+  setTimeout(() => playTone(170,.18,'sawtooth',.09), 120);
+}
+
+function playTone(freq,duration,type,volume){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.value = volume;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + duration);
+    osc.stop(audioCtx.currentTime + duration);
+  }catch(e){}
+}
+
+if(!window.SpeechRecognition && !window.webkitSpeechRecognition){
+  $('noSupport').style.display = 'block';
+}
+</script>
+</body>
+</html>
