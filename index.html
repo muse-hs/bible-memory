@@ -99,33 +99,16 @@ const FULL = `내가 사람의 방언과 천사의 말을 할지라도 사랑이
 const $ = id => document.getElementById(id);
 const FULL_WORDS = splitKoreanWords(FULL);
 const FULL_WORD_NORMS = new Set(FULL_WORDS.map(normalizeKoreanText));
-const VERSES = [
-  '내가 사람의 방언과 천사의 말을 할지라도 사랑이 없으면 소리 나는 구리와 울리는 꽹과리가 되고',
-  '내가 예언하는 능력이 있어 모든 비밀과 모든 지식을 알고 또 산을 옮길 만한 모든 믿음이 있을지라도 사랑이 없으면 내가 아무 것도 아니요',
-  '내가 내게 있는 모든 것으로 구제하고 또 내 몸을 불사르게 내줄지라도 사랑이 없으면 내게 아무 유익이 없느니라',
-  '사랑은 오래 참고 사랑은 온유하며 시기하지 아니하며 사랑은 자랑하지 아니하며 교만하지 아니하며',
-  '무례히 행하지 아니하며 자기의 유익을 구하지 아니하며 성내지 아니하며 악한 것을 생각하지 아니하며',
-  '불의를 기뻐하지 아니하며 진리와 함께 기뻐하고',
-  '모든 것을 참으며 모든 것을 믿으며 모든 것을 바라며 모든 것을 견디느니라',
-  '사랑은 언제까지나 떨어지지 아니하되 예언도 폐하고 방언도 그치고 지식도 폐하리라',
-  '우리는 부분적으로 알고 부분적으로 예언하니',
-  '온전한 것이 올 때에는 부분적으로 하던 것이 폐하리라',
-  '내가 어렸을 때에는 말하는 것이 어린 아이와 같고 깨닫는 것이 어린 아이와 같고 생각하는 것이 어린 아이와 같다가 장성한 사람이 되어서는 어린 아이의 일을 버렸노라',
-  '우리가 지금은 거울로 보는 것 같이 희미하나 그 때에는 얼굴과 얼굴을 대하여 볼 것이요 지금은 내가 부분적으로 아나 그 때에는 주께서 나를 아신 것 같이 내가 온전히 알리라',
-  '그런즉 믿음, 소망, 사랑, 이 세 가지는 항상 있을 것인데 그 중의 제일은 사랑이라'
-];
-const VERSE_CONTEXTS = buildVerseContexts(VERSES);
-const RECENT_SCORE_CHARS = 140;
-const SCORE_THROTTLE_MS = 80;
-const WRONG_DECISION_DELAY_MS = 900;
+const FULL_NORM = normalizeKoreanText(FULL);
+const FULL_SEGMENTS = buildTargetSegments(FULL_WORDS);
 const CORRECTION_GROUPS = {
   '울리는': ['우리는','우리는요','우리 는','우리는데','우리는가','우리는 게','울리는','울리는요','울리 는','울리는데','울리네','울리는가','울리는 게','울리는게','울이는','울이는요','우리를은','울린','울린는','우릴는','울리며','울리기','울림은','울리는이','올리는','올리 는','울린은','울리 는데','울리는 데','울리게','울리느','울리니','울리은','울리는은','울리는를','울리는와','우리는은','우리는를','우리는와','우린는','우리는 데','우리는데요'],
   '꽹과리': ['꽹과리','꽹과리가','꽹과리를','꽹가리','꽹가리가','꽹가리를','꽹관리','꽹관리가','꽹관리를','괭과리','괭과리가','괭과리를','괭가리','괭가리가','깽과리','깽과리가','깽과리를','깽가리','깽가리가','팽과리','팽가리','꽹거리','꽹거리가','꽹거리를','깽거리','깽거리가','깽거리를','꽹과린','꽹가린','꽹 과리','꽹 과 리','깽 과리','깽 과 리','꽹 가리','깽 가리','꽹괄이','깽괄이','꽹고리','깽고리','꽹과리와','꽹거리와','깽거리와','괭거리','꽹가 리','깽가 리','꽹가리 되고','깽가리 되고','꽹과리 되고','꽹관리 되고','깽거리 되고','꽹괄이가','깽괄이가','꽹고리가','깽고리가','꽹고리를','깽고리를','꽹관 리','깽관리','깽관리가','깽관리를','꽹가래','깽가래','꽹가래가','깽가래가','꽹과리가되고','꽹관리가되고','깽가리가되고'],
   '무례히': ['무례히','무례이','무례 히','무례 이','무래히','무래이','무레이','무레히','무레희','물에이','물에 희','물에희','물에히','물레히','무료히','무리히','무례히이','물애이','물애 희','물애희','물애히','무례희','무례의','무래희','무래의','무레의','무레 이','무래 이','무 레 히','무 래 히','무 레이','무 래이','무레 이','무래 이','물 에이','물 에 히','물 에 희','물레 희','물레 이','몰에이','몰에히','몰에 희','문에이','문에히','문에 희','무례잉','무레이이','물에이이'],
   '행하지': ['행하지','행 하지','향하지','형하지','해앟지','해아지','행아지','행하 지','행하지요'],
   '되고': ['되고','대구','대고','되고요','된고','대구요'],
-  '내게': ['내게','네게','4개','내 개','네 개','내게에'],
-  '온전한': ['온전한','운전한','온 전한','운 전한','온전 한'],
+  '내게': ['내게','네게','4개','내 개','네 개','내게에','내게 있는','네게 있는','4개 있는'],
+  '온전한': ['온전한','운전한','온전한 것이','운전한 것이','온 전한','운 전한','온전 한'],
   '예언도': ['예언도','예영도','예현도','예연도','예원도','예언 도','예영 도','예현 도','예연 도'],
   '폐하고': ['폐하고','패하고','폐 하고','패 하고','폐하 고','패하 고'],
   '방언도': ['방언도','강원도','방 온도','방언 도','강원 도','방온도','방원도','방연도'],
@@ -301,103 +284,6 @@ const PHRASE_CORRECTION_MAP = {
   '제일은 사랑이야': '제일은 사랑이라',
   '제일은 사랑 이라': '제일은 사랑이라'
 };
-const LIMITED_CORRECTION_MAP = {
-  '우리는깽 가리가 되고': '울리는 꽹과리가 되고',
-  '우리는 꽹가리가 되고': '울리는 꽹과리가 되고',
-  '우리는 꽹관리가 되고': '울리는 꽹과리가 되고',
-  '우리는 깽가리가 되고': '울리는 꽹과리가 되고',
-  '우리는 깽다리가 되고': '울리는 꽹과리가 되고',
-  '우리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
-  '울리는 꽹가리가 되고': '울리는 꽹과리가 되고',
-  '울리는 꽹관리가 되고': '울리는 꽹과리가 되고',
-  '울리는 깽가리가 되고': '울리는 꽹과리가 되고',
-  '울리는 깽다리가 되고': '울리는 꽹과리가 되고',
-  '울리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
-  '깽가리가 되고': '꽹과리가 되고',
-  '깽다리가 되고': '꽹과리가 되고',
-  '꽹가리가 되고': '꽹과리가 되고',
-  '꽹관리가 되고': '꽹과리가 되고',
-  '깽과이가 되고': '꽹과리가 되고',
-  '우리는깽': '울리는 꽹',
-  '우리는 깽': '울리는 꽹',
-  '우리는 꽹': '울리는 꽹',
-  '깽가리': '꽹과리',
-  '깽다리': '꽹과리',
-  '꽹가리': '꽹과리',
-  '꽹관리': '꽹과리',
-  '깽과이': '꽹과리',
-  '물에 이행하지 아니하며': '무례히 행하지 아니하며',
-  '물에 행하지 아니하며': '무례히 행하지 아니하며',
-  '우리 이행하지 아니하며': '무례히 행하지 아니하며',
-  '물에힘 행하지 아니하며': '무례히 행하지 아니하며',
-  '물의힘 행하지 아니하며': '무례히 행하지 아니하며',
-  '무례이 행하지 아니하며': '무례히 행하지 아니하며',
-  '무례희 행하지 아니하며': '무례히 행하지 아니하며',
-  '물레희 행하지 아니하며': '무례히 행하지 아니하며',
-  '무대희 행하지 아니하며': '무례히 행하지 아니하며',
-  '물례희 행하지 아니하며': '무례히 행하지 아니하며',
-  '물레이 행하지 아니하며': '무례히 행하지 아니하며',
-  '브레인 행하지 아니하며': '무례히 행하지 아니하며',
-  '구래힘 행하지 아니하며': '무례히 행하지 아니하며',
-  '울애기 행하지 아니하며': '무례히 행하지 아니하며',
-  '울레희 행하지 아니하며': '무례히 행하지 아니하며',
-  '물랭이 행하지 아니하며': '무례히 행하지 아니하며',
-  '무레히 행하지 아니하며': '무례히 행하지 아니하며',
-  '무래히 행하지 아니하며': '무례히 행하지 아니하며',
-  '물에히 행하지 아니하며': '무례히 행하지 아니하며',
-  '물에희 행하지 아니하며': '무례히 행하지 아니하며',
-  '물에힘': '무례히',
-  '물의힘': '무례히',
-  '무례희': '무례히',
-  '물레희': '무례히',
-  '무대희': '무례히',
-  '물례희': '무례히',
-  '물레이': '무례히',
-  '브레인': '무례히',
-  '구래힘': '무례히',
-  '울애기': '무례히',
-  '울레희': '무례히',
-  '물랭이': '무례히',
-  '무례이': '무례히',
-  '무레히': '무례히',
-  '무래히': '무례히',
-  '물에히': '무례히',
-  '물에희': '무례히',
-  '떨어지지 아니하대': '떨어지지 아니하되',
-  '떨어지지 아니하돼': '떨어지지 아니하되',
-  '떨어지지 아니하데': '떨어지지 아니하되',
-  '떨어지지 아니 하대': '떨어지지 아니하되',
-  '떨어지지 아니 하돼': '떨어지지 아니하되',
-  '운전한 것이 올때에는': '온전한 것이 올 때에는',
-  '운전한 것이 올 때에는': '온전한 것이 올 때에는',
-  '내가 어렸을 때는': '내가 어렸을 때에는',
-  '그때는': '그때에는',
-  '그 중에': '그 중의',
-  '폐하이다': '폐하리라',
-  '최하이라': '폐하리라',
-  '대하이라': '폐하리라',
-  '최하리다': '폐하리라',
-  '폐아리라': '폐하리라',
-  '폐아이라': '폐하리라',
-  '폐이다': '폐하리라',
-  '폐할이라': '폐하리라',
-  '강원도 고치고': '방언도 그치고',
-  '방 온도 고치고': '방언도 그치고',
-  '방언도 고치고': '방언도 그치고',
-  '예영도 폐하고': '예언도 폐하고',
-  '예현도 폐하고': '예언도 폐하고',
-  '예연도 폐하고': '예언도 폐하고',
-  '예언도 패하고': '예언도 폐하고',
-  '예영도 패하고': '예언도 폐하고',
-  '예현도 패하고': '예언도 폐하고',
-  '예연도 패하고': '예언도 폐하고',
-  '거울로 보는 것 같이 힘이 하나': '거울로 보는 것 같이 희미하나',
-  '거울로 보는 것 같이 힘이 안나': '거울로 보는 것 같이 희미하나',
-  '거울로 보는 것 같이 힘이 안 나': '거울로 보는 것 같이 희미하나',
-  '거울로 보는 것 같이 잠이 안와': '거울로 보는 것 같이 희미하나',
-  '내가 4개 있는 모든 것으로': '내가 내게 있는 모든 것으로',
-  '내가 네게 있는 모든 것으로': '내가 내게 있는 모든 것으로'
-};
 const correctionMap = buildCorrectionMap(CORRECTION_GROUPS);
 const CORRECTION_PHRASES = buildCorrectionPhrases(CORRECTION_GROUPS);
 const CRITICAL_CONTEXTS = [
@@ -425,8 +311,6 @@ let micOn = false;
 let shouldRestart = false;
 let resettingSpeech = false;
 let finalText = '';
-let confirmedTranscript = '';
-let currentInterimTranscript = '';
 let lastChecked = '';
 let timerId = null;
 let startedAt = null;
@@ -434,13 +318,6 @@ let audioCtx = null;
 let wrongTimer = null;
 let clearMessageTimer = null;
 let liveNorm = '';
-let currentVerseIndex = 0;
-let pendingScoreTimer = null;
-let lastScoreAt = 0;
-let pendingScoreText = '';
-let pendingScoreIsInterim = false;
-let pendingScoreGotFinal = false;
-const targetWindowCache = {};
 
 function normalizeKoreanText(text){
   return text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]/g,'').toLowerCase();
@@ -505,78 +382,33 @@ function buildAnswerContext(phrase){
   };
 }
 
-function buildVerseContexts(verses){
-  let cursor = 0;
-  return verses.map((text, index) => {
-    const words = splitKoreanWords(text);
-    const start = FULL_WORDS.findIndex((_, wordIndex) => {
-      if(wordIndex < cursor) return false;
-      return normalizeKoreanText(FULL_WORDS.slice(wordIndex, wordIndex + words.length).join(' ')) === normalizeKoreanText(text);
-    });
-    if(start >= 0) cursor = start + words.length;
-    return {
-      index,
-      text,
-      words,
-      start: Math.max(0, start),
-      norm: normalizeKoreanText(text)
-    };
-  });
-}
-
-function buildTargetSegments(words, baseStart=0){
+function buildTargetSegments(words){
   const segments = [];
-  const maxLength = Math.min(28, words.length);
-  for(let length = 1; length <= maxLength; length++){
+  for(let length = 1; length <= words.length; length++){
     for(let start = 0; start <= words.length - length; start++){
       const text = words.slice(start, start + length).join(' ');
       segments.push({
-        start: baseStart + start,
+        start,
         text,
         words: words.slice(start, start + length),
         norm: normalizeKoreanText(text)
       });
     }
   }
-  segments.push({ start: baseStart, text: words.join(' '), words, norm: normalizeKoreanText(words.join(' ')) });
+  segments.push({ start: 0, text: FULL, words, norm: normalizeKoreanText(FULL) });
   return segments;
-}
-
-function getTargetWindow(index=currentVerseIndex){
-  const from = Math.min(Math.max(0, index), VERSE_CONTEXTS.length - 1);
-  const to = Math.min(VERSE_CONTEXTS.length - 1, from + 1);
-  const cacheKey = `${from}-${to}`;
-  if(targetWindowCache[cacheKey]) return targetWindowCache[cacheKey];
-  const words = VERSE_CONTEXTS.slice(from, to + 1).flatMap(verse => verse.words);
-  const baseStart = VERSE_CONTEXTS[from]?.start || 0;
-  targetWindowCache[cacheKey] = {
-    from,
-    to,
-    words,
-    segments: buildTargetSegments(words, baseStart)
-  };
-  return targetWindowCache[cacheKey];
 }
 
 function escapeRegExp(text){
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function isAllowedPhraseTarget(target, allowedNorms){
-  if(!allowedNorms) return true;
-  return splitKoreanWords(target).every(word => {
-    const wordNorm = normalizeKoreanText(word);
-    return allowedNorms.has(wordNorm) || isAllowedCorrection(wordNorm, allowedNorms);
-  });
-}
-
-function applyPhraseCorrections(text, allowedNorms=FULL_WORD_NORMS){
+function applyPhraseCorrections(text){
   let corrected = text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
 
   Object.entries(PHRASE_CORRECTION_MAP)
     .sort((a, b) => normalizeKoreanText(b[0]).length - normalizeKoreanText(a[0]).length)
     .forEach(([variant, target]) => {
-      if(!isAllowedPhraseTarget(target, allowedNorms)) return;
       const words = splitKoreanWords(variant);
       const pattern = words.length > 1
         ? words.map(escapeRegExp).join('\\s*')
@@ -587,52 +419,23 @@ function applyPhraseCorrections(text, allowedNorms=FULL_WORD_NORMS){
   return corrected;
 }
 
-function isAllowedCorrection(correctedNorm, allowedNorms){
-  if(!allowedNorms) return true;
-  if(allowedNorms.has(correctedNorm)) return true;
-  return Array.from(allowedNorms).some(expectedNorm => expectedNorm.startsWith(correctedNorm));
-}
-
-function applyCorrectionMap(text, allowedNorms=FULL_WORD_NORMS){
-  let corrected = applyPhraseCorrections(text, allowedNorms);
+function applyCorrectionMap(text){
+  let corrected = applyPhraseCorrections(text);
 
   CORRECTION_PHRASES.forEach(({ variant, target }) => {
     const pattern = splitKoreanWords(variant).map(escapeRegExp).join('\\s+');
-    const targetNorm = normalizeKoreanText(target);
-    if(isAllowedCorrection(targetNorm, allowedNorms)){
-      corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
-    }
+    corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
   });
 
   return splitKoreanWords(corrected).map(word => {
     const normalizedWord = normalizeKoreanText(word);
-    if(allowedNorms.has(normalizedWord)) return word;
-    const correctedWord = correctionMap[normalizedWord];
-    if(correctedWord && isAllowedCorrection(normalizeKoreanText(correctedWord), allowedNorms)){
-      return correctedWord;
-    }
-    return word;
+    if(FULL_WORD_NORMS.has(normalizedWord)) return word;
+    return correctionMap[normalizedWord] || word;
   }).join(' ');
 }
 
-function normalizeForComparison(text, allowedNorms=FULL_WORD_NORMS){
-  return normalizeKoreanText(applyCorrectionMap(applyPhraseCorrections(text, allowedNorms), allowedNorms));
-}
-
-function applyLimitedCorrections(text){
-  let corrected = text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
-  Object.entries(LIMITED_CORRECTION_MAP)
-    .sort((a, b) => normalizeKoreanText(b[0]).length - normalizeKoreanText(a[0]).length)
-    .forEach(([variant, target]) => {
-      const pattern = splitKoreanWords(variant).map(escapeRegExp).join('\\s*');
-      corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
-    });
-  corrected = corrected.replace(/((?:울리는\s+)?(?:꽹과리|깽가리|깽다리|꽹가리|꽹관리|깽과이)가?)\s+대구/gi, '$1 되고');
-  return corrected;
-}
-
-function normalizeLimitedText(text){
-  return normalizeKoreanText(applyLimitedCorrections(text));
+function normalizeForComparison(text){
+  return normalizeKoreanText(applyCorrectionMap(applyPhraseCorrections(text)));
 }
 
 function calculateSimilarity(a, b){
@@ -659,25 +462,26 @@ function calculateSimilarity(a, b){
   return (maxLength - distances[left.length][right.length]) / maxLength;
 }
 
+function calculateStringSimilarity(a, b){
+  return calculateSimilarity(normalizeForComparison(a), normalizeForComparison(b));
+}
+
 function getSegmentThreshold(normLength){
   if(normLength <= 8) return .68;
   if(normLength <= 18) return .70;
   return .75;
 }
 
-function getTargetAllowedNorms(targetWindow){
-  return new Set(targetWindow.words.map(normalizeKoreanText));
-}
-
-function getBestMatchingVerseOrSegment(transcript, targetWindow=getTargetWindow(), precomputedNorm=null){
-  const allowedNorms = getTargetAllowedNorms(targetWindow);
-  const targetSegments = targetWindow.segments;
-  const transcriptNorm = precomputedNorm || normalizeForComparison(transcript, allowedNorms);
+function getBestMatchingVerseOrSegment(transcript, targetSegments=FULL_SEGMENTS){
+  const transcriptNorm = normalizeForComparison(transcript);
   if(!transcriptNorm) return { score: 0, text: '', norm: '', words: [] };
+  if(FULL_NORM.includes(transcriptNorm)){
+    return { score: 1, text: transcript, norm: transcriptNorm, words: splitKoreanWords(transcript) };
+  }
 
   let best = { score: 0, text: transcript, norm: transcriptNorm, words: splitKoreanWords(transcript) };
-  const minLength = Math.max(1, transcriptNorm.length - Math.ceil(transcriptNorm.length * .2));
-  const maxLength = transcriptNorm.length + Math.ceil(transcriptNorm.length * .2);
+  const minLength = Math.max(1, transcriptNorm.length - Math.ceil(transcriptNorm.length * .45));
+  const maxLength = transcriptNorm.length + Math.ceil(transcriptNorm.length * .45);
 
   targetSegments.forEach(segment => {
     if(segment.norm.length < minLength || segment.norm.length > maxLength) return;
@@ -705,7 +509,7 @@ function getTokenMatchScore(spoken, expected){
 
   if(spokenNorm.length <= 2 || expectedNorm.length <= 2) return 0;
   const similarity = calculateSimilarity(spokenNorm, expectedNorm);
-  const threshold = Math.max(.78, .86 - Math.min(spokenNorm.length, expectedNorm.length) * .01);
+  const threshold = Math.max(.75, .82 - Math.min(spokenNorm.length, expectedNorm.length) * .01);
   return similarity >= threshold ? similarity : 0;
 }
 
@@ -726,17 +530,27 @@ function scoreWordsAgainstAnswer(spokenWords, expectedWords){
   return total / maxLength;
 }
 
-function findBestVerseWindow(spokenWords, targetWindow=getTargetWindow()){
+function scoreVerseWindow(spokenWords, start, length){
+  return scoreWordsAgainstAnswer(spokenWords, FULL_WORDS.slice(start, start + length));
+}
+
+function findBestVerseWindow(spokenWords){
   let best = { score: 0, words: spokenWords };
   const minLength = Math.max(1, spokenWords.length - 2);
-  const maxLength = Math.min(targetWindow.words.length, spokenWords.length + 2);
+  const maxLength = Math.min(FULL_WORDS.length, spokenWords.length + 2);
+
+  CRITICAL_CONTEXTS.forEach(context => {
+    const score = scoreWordsAgainstAnswer(spokenWords, context.words);
+    if(score > best.score){
+      best = { score: score + .03, words: context.words };
+    }
+  });
 
   for(let length = minLength; length <= maxLength; length++){
-    for(let start = 0; start <= targetWindow.words.length - length; start++){
-      const expectedWords = targetWindow.words.slice(start, start + length);
-      const score = scoreWordsAgainstAnswer(spokenWords, expectedWords);
+    for(let start = 0; start <= FULL_WORDS.length - length; start++){
+      const score = scoreVerseWindow(spokenWords, start, length);
       if(score > best.score){
-        best = { score, words: expectedWords };
+        best = { score, words: FULL_WORDS.slice(start, start + length) };
       }
     }
   }
@@ -744,150 +558,76 @@ function findBestVerseWindow(spokenWords, targetWindow=getTargetWindow()){
   return best;
 }
 
-function normalizeRecentChunk(chunk, targetWindow=getTargetWindow()){
-  return applyLimitedCorrections(chunk.slice(-RECENT_SCORE_CHARS));
-}
-
-function scoreRecentChunkAgainstTarget(chunk, targetWindow=getTargetWindow()){
-  const normalizedChunk = applyLimitedCorrections(chunk.slice(-RECENT_SCORE_CHARS));
-  const normalizedChunkNorm = normalizeKoreanText(normalizedChunk);
-  const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(chunk).includes(pattern));
-  const exactSegment = !hasStrictWrongExpression && normalizedChunkNorm.length >= 2
-    ? targetWindow.segments.find(segment => segment.norm === normalizedChunkNorm)
-    : null;
-  return {
-    accepted: Boolean(exactSegment),
-    text: normalizedChunk,
-    norm: normalizedChunkNorm,
-    score: exactSegment ? 1 : 0,
-    stringScore: exactSegment ? 1 : 0,
-    stringMatchText: normalizedChunk,
-    matchStart: exactSegment ? exactSegment.start : -1,
-    matchEnd: exactSegment ? exactSegment.start + exactSegment.words.length : -1,
-    hasStrictWrongExpression
-  };
-}
-
-function isPotentialPrefixOfTarget(norm, targetWindow=getTargetWindow()){
-  if(!norm) return true;
-  return targetWindow.segments.some(segment => segment.norm.startsWith(norm));
-}
-
-function normalizeTranscriptByVerse(raw, verseIndex=currentVerseIndex){
-  const targetWindow = getTargetWindow(verseIndex);
-  const mappedText = applyLimitedCorrections(raw);
-  const mappedNorm = normalizeKoreanText(mappedText);
+function normalizeTranscriptByVerse(raw){
+  const phraseCorrectedText = applyPhraseCorrections(raw);
+  const mappedText = applyCorrectionMap(phraseCorrectedText);
+  const spokenWords = splitKoreanWords(mappedText);
   const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(raw).includes(pattern));
-  const exactSegment = !hasStrictWrongExpression && mappedNorm.length >= 2
-    ? targetWindow.segments.find(segment => segment.norm === mappedNorm)
-    : null;
-  if(!mappedNorm){
+  if(!spokenWords.length){
     return { text: '', norm: '', score: 0, stringScore: 0, hasStrictWrongExpression };
   }
+  if(hasStrictWrongExpression){
+    return {
+      text: mappedText,
+      norm: normalizeForComparison(mappedText),
+      score: 0,
+      stringScore: 0,
+      stringMatchText: mappedText,
+      hasStrictWrongExpression
+    };
+  }
+
+  const best = findBestVerseWindow(spokenWords);
+  const bestString = getBestMatchingVerseOrSegment(mappedText);
+  const stringThreshold = getSegmentThreshold(bestString.norm.length);
+  const useStringMatch = bestString.score >= stringThreshold;
+  const normalizedWords = !useStringMatch && best.score >= .72 ? best.words : spokenWords;
+  const normalizedText = normalizedWords.join(' ');
+  const displayText = useStringMatch ? bestString.text : normalizedText;
+
   return {
-    accepted: Boolean(exactSegment),
-    text: mappedText,
-    norm: mappedNorm,
-    score: exactSegment ? 1 : 0,
-    stringScore: exactSegment ? 1 : 0,
-    stringMatchText: mappedText,
-    matchStart: exactSegment ? exactSegment.start : -1,
-    matchEnd: exactSegment ? exactSegment.start + exactSegment.words.length : -1,
+    text: displayText,
+    norm: normalizeForComparison(displayText),
+    score: best.score,
+    stringScore: bestString.score,
+    stringMatchText: bestString.text,
     hasStrictWrongExpression
   };
 }
 
 function compareWithAnswer(normalizedTranscript){
-  return Boolean(normalizedTranscript.accepted);
-}
+  if(normalizedTranscript.hasStrictWrongExpression) return false;
+  if(!normalizedTranscript.norm) return false;
+  if(FULL_NORM.includes(normalizedTranscript.norm)) return true;
+  if(normalizedTranscript.stringScore >= getSegmentThreshold(normalizedTranscript.norm.length)) return true;
+  if(normalizedTranscript.score >= .82) return true;
 
-function extractNewChunk(event){
-  let finalChunk = '';
-  let interimChunk = '';
-  for(let i = event.resultIndex; i < event.results.length; i++){
-    const text = event.results[i][0].transcript;
-    if(event.results[i].isFinal) finalChunk += `${text} `;
-    else interimChunk += text;
-  }
-  return { finalChunk: finalChunk.trim(), interimChunk: interimChunk.trim() };
-}
-
-function commitFinalTranscript(chunk){
-  if(!chunk) return;
-  confirmedTranscript = `${confirmedTranscript} ${chunk}`.replace(/\s+/g, ' ').trim();
-  finalText = confirmedTranscript;
-  currentInterimTranscript = '';
-}
-
-function updateInterimTranscript(chunk){
-  currentInterimTranscript = chunk || '';
-}
-
-function getRecentTranscriptWindow(){
-  return `${confirmedTranscript} ${currentInterimTranscript}`.replace(/\s+/g, ' ').trim().slice(-RECENT_SCORE_CHARS);
-}
-
-function updateCurrentVerseFromMatch(result){
-  if(!result || typeof result.matchStart !== 'number' || result.matchStart < 0) return;
-  const currentVerse = VERSE_CONTEXTS[currentVerseIndex];
-  const verseEnd = currentVerse.start + currentVerse.words.length;
-  if(result.matchEnd >= verseEnd - 1){
-    currentVerseIndex = Math.min(VERSE_CONTEXTS.length - 1, currentVerseIndex + 1);
-  }
-}
-
-function throttledScoreUpdate(chunk, isInterim=false, gotFinal=false){
-  pendingScoreText = chunk;
-  pendingScoreIsInterim = isInterim;
-  pendingScoreGotFinal = gotFinal;
-  const now = Date.now();
-  const elapsed = now - lastScoreAt;
-  if(elapsed >= SCORE_THROTTLE_MS){
-    runScoreUpdate();
-    return;
-  }
-  clearTimeout(pendingScoreTimer);
-  pendingScoreTimer = setTimeout(runScoreUpdate, SCORE_THROTTLE_MS - elapsed);
-}
-
-function runScoreUpdate(){
-  clearTimeout(pendingScoreTimer);
-  pendingScoreTimer = null;
-  lastScoreAt = Date.now();
-  if(!pendingScoreText) return;
-  checkSpeech(pendingScoreText, pendingScoreIsInterim, pendingScoreGotFinal);
-}
-
-function handleSpeechResult(event){
-  if(!micOn || resettingSpeech) return;
-  const { finalChunk, interimChunk } = extractNewChunk(event);
-  if(finalChunk) commitFinalTranscript(finalChunk);
-  updateInterimTranscript(interimChunk);
-
-  const visibleText = `${confirmedTranscript} ${currentInterimTranscript}`.replace(/\s+/g, ' ').trim();
-  setRecognized(visibleText || '듣고 있습니다', visibleText ? '' : 'empty');
-  throttledScoreUpdate(getRecentTranscriptWindow(), Boolean(interimChunk), Boolean(finalChunk));
+  return CRITICAL_CONTEXTS.some(context => {
+    const contextNorm = normalizeKoreanText(context.words.join(' '));
+    return calculateSimilarity(normalizedTranscript.norm, contextNorm) >= .86;
+  });
 }
 
 // 브라우저 콘솔에서 runNormalizationExamples()를 호출해 보정 예시를 빠르게 확인할 수 있다.
-// 통과: "우리는 꽹가리가 되고" -> "울리는 꽹과리가 되고"
-// 통과: "물에 이행하지 아니하며" -> "무례히 행하지 아니하며"
-// 통과: "떨어지지 아니하대" -> "떨어지지 아니하되"
+// 통과: "물에 희 행하지 아니하며" -> "무례히 행하지 아니하며"
+// 통과: "우리는깽 가리가 되고" -> "울리는 꽹과리가 되고"
+// 통과: "내가 4개 있는 모든 것으로" -> "내가 내게 있는 모든 것으로"
 // 탈락: "무례하게 행하지 아니하며"는 "무례히"가 아니므로 오답
 function runNormalizationExamples(){
   const examples = [
-    ['우리는 꽹가리가 되고', '울리는 꽹과리가 되고', 0],
-    ['물에 이행하지 아니하며', '무례히 행하지 아니하며', 4],
-    ['떨어지지 아니하대', '떨어지지 아니하되', 7],
-    ['운전한 것이 올때에는', '온전한 것이 올 때에는', 9],
-    ['강원도 고치고', '방언도 그치고', 7],
-    ['예영도 폐하고', '예언도 폐하고', 7]
+    ['우리는깽 가리가 되고', '울리는 꽹과리가 되고'],
+    ['내가 4개 있는 모든 것으로', '내가 내게 있는 모든 것으로'],
+    ['물에힘 행하지 아니하며', '무례히 행하지 아니하며'],
+    ['브레인 행하지 아니하며', '무례히 행하지 아니하며'],
+    ['운전한 것이 올때에는', '온전한 것이 올 때에는'],
+    ['지식도 폐아리라', '지식도 폐하리라'],
+    ['강원도 고치고', '방언도 그치고'],
+    ['예영도 패하고', '예언도 폐하고']
   ];
-  return examples.map(([input, expected, verseIndex]) => ({
+  return examples.map(([input, expected]) => ({
     input,
     expected,
-    actual: normalizeTranscriptByVerse(input, verseIndex).text,
-    pass: normalizeTranscriptByVerse(input, verseIndex).text === expected
+    actual: normalizeTranscriptByVerse(input).text
   }));
 }
 
@@ -909,7 +649,20 @@ function initSpeech(){
     setMicUi(true);
   };
 
-  recognition.onresult = handleSpeechResult;
+  recognition.onresult = event => {
+    if(!micOn || resettingSpeech) return;
+    let interim = '';
+    let gotFinal = false;
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      const text = event.results[i][0].transcript;
+      if(event.results[i].isFinal){
+        finalText += text;
+        gotFinal = true;
+      }
+      else interim += text;
+    }
+    checkSpeech(finalText + interim, Boolean(interim), gotFinal);
+  };
 
   recognition.onerror = event => {
     if(event.error === 'not-allowed'){
@@ -970,8 +723,7 @@ function stopMic(){
 
 function checkSpeech(raw, isInterim, gotFinal=false){
   const text = raw.trim();
-  const targetWindow = getTargetWindow(currentVerseIndex);
-  const normalizedTranscript = scoreRecentChunkAgainstTarget(text, targetWindow);
+  const normalizedTranscript = normalizeTranscriptByVerse(text);
   const norm = normalizedTranscript.norm;
   liveNorm = norm;
   if(!norm){
@@ -980,31 +732,25 @@ function checkSpeech(raw, isInterim, gotFinal=false){
   }
 
   setRecognized(normalizedTranscript.text || text, '');
-  if(norm.length < 1) return;
+  if(norm.length < 4) return;
   if(norm === lastChecked) return;
   lastChecked = norm;
 
   if(compareWithAnswer(normalizedTranscript)){
     clearTimeout(wrongTimer);
-    updateCurrentVerseFromMatch(normalizedTranscript);
     setStatus('맞게 말하고 있습니다', 'ok');
     setRecognized(normalizedTranscript.text || text, 'ok');
     return;
   }
 
   clearTimeout(wrongTimer);
-  if(isInterim){
+  if(isInterim || !gotFinal){
     setStatus('듣는 중입니다. 이어서 말하세요', 'on');
     return;
   }
-  if(isPotentialPrefixOfTarget(norm, targetWindow)){
-    setStatus('듣는 중입니다. 이어서 말하세요', 'on');
-    return;
-  }
-  setStatus('듣는 중입니다. 이어서 말하세요', 'on');
   wrongTimer = setTimeout(() => {
-    if(liveNorm === norm) handleWrong();
-  }, WRONG_DECISION_DELAY_MS);
+    if(micOn && liveNorm === norm) handleWrong();
+  }, 1200);
 }
 
 function handleWrong(){
@@ -1039,16 +785,8 @@ function clearAllSpeechImmediately(){
 
 function resetBufferOnly(){
   finalText = '';
-  confirmedTranscript = '';
-  currentInterimTranscript = '';
   lastChecked = '';
   liveNorm = '';
-  pendingScoreText = '';
-  pendingScoreIsInterim = false;
-  pendingScoreGotFinal = false;
-  currentVerseIndex = 0;
-  clearTimeout(pendingScoreTimer);
-  pendingScoreTimer = null;
 }
 
 function clearAttempt(){
