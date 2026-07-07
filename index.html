@@ -100,15 +100,32 @@ const $ = id => document.getElementById(id);
 const FULL_WORDS = splitKoreanWords(FULL);
 const FULL_WORD_NORMS = new Set(FULL_WORDS.map(normalizeKoreanText));
 const FULL_NORM = normalizeKoreanText(FULL);
-const FULL_SEGMENTS = buildTargetSegments(FULL_WORDS);
+const VERSES = [
+  '내가 사람의 방언과 천사의 말을 할지라도 사랑이 없으면 소리 나는 구리와 울리는 꽹과리가 되고',
+  '내가 예언하는 능력이 있어 모든 비밀과 모든 지식을 알고 또 산을 옮길 만한 모든 믿음이 있을지라도 사랑이 없으면 내가 아무 것도 아니요',
+  '내가 내게 있는 모든 것으로 구제하고 또 내 몸을 불사르게 내줄지라도 사랑이 없으면 내게 아무 유익이 없느니라',
+  '사랑은 오래 참고 사랑은 온유하며 시기하지 아니하며 사랑은 자랑하지 아니하며 교만하지 아니하며',
+  '무례히 행하지 아니하며 자기의 유익을 구하지 아니하며 성내지 아니하며 악한 것을 생각하지 아니하며',
+  '불의를 기뻐하지 아니하며 진리와 함께 기뻐하고',
+  '모든 것을 참으며 모든 것을 믿으며 모든 것을 바라며 모든 것을 견디느니라',
+  '사랑은 언제까지나 떨어지지 아니하되 예언도 폐하고 방언도 그치고 지식도 폐하리라',
+  '우리는 부분적으로 알고 부분적으로 예언하니',
+  '온전한 것이 올 때에는 부분적으로 하던 것이 폐하리라',
+  '내가 어렸을 때에는 말하는 것이 어린 아이와 같고 깨닫는 것이 어린 아이와 같고 생각하는 것이 어린 아이와 같다가 장성한 사람이 되어서는 어린 아이의 일을 버렸노라',
+  '우리가 지금은 거울로 보는 것 같이 희미하나 그 때에는 얼굴과 얼굴을 대하여 볼 것이요 지금은 내가 부분적으로 아나 그 때에는 주께서 나를 아신 것 같이 내가 온전히 알리라',
+  '그런즉 믿음, 소망, 사랑, 이 세 가지는 항상 있을 것인데 그 중의 제일은 사랑이라'
+];
+const VERSE_CONTEXTS = buildVerseContexts(VERSES);
+const RECENT_SCORE_CHARS = 140;
+const SCORE_THROTTLE_MS = 250;
 const CORRECTION_GROUPS = {
   '울리는': ['우리는','우리는요','우리 는','우리는데','우리는가','우리는 게','울리는','울리는요','울리 는','울리는데','울리네','울리는가','울리는 게','울리는게','울이는','울이는요','우리를은','울린','울린는','우릴는','울리며','울리기','울림은','울리는이','올리는','올리 는','울린은','울리 는데','울리는 데','울리게','울리느','울리니','울리은','울리는은','울리는를','울리는와','우리는은','우리는를','우리는와','우린는','우리는 데','우리는데요'],
   '꽹과리': ['꽹과리','꽹과리가','꽹과리를','꽹가리','꽹가리가','꽹가리를','꽹관리','꽹관리가','꽹관리를','괭과리','괭과리가','괭과리를','괭가리','괭가리가','깽과리','깽과리가','깽과리를','깽가리','깽가리가','팽과리','팽가리','꽹거리','꽹거리가','꽹거리를','깽거리','깽거리가','깽거리를','꽹과린','꽹가린','꽹 과리','꽹 과 리','깽 과리','깽 과 리','꽹 가리','깽 가리','꽹괄이','깽괄이','꽹고리','깽고리','꽹과리와','꽹거리와','깽거리와','괭거리','꽹가 리','깽가 리','꽹가리 되고','깽가리 되고','꽹과리 되고','꽹관리 되고','깽거리 되고','꽹괄이가','깽괄이가','꽹고리가','깽고리가','꽹고리를','깽고리를','꽹관 리','깽관리','깽관리가','깽관리를','꽹가래','깽가래','꽹가래가','깽가래가','꽹과리가되고','꽹관리가되고','깽가리가되고'],
   '무례히': ['무례히','무례이','무례 히','무례 이','무래히','무래이','무레이','무레히','무레희','물에이','물에 희','물에희','물에히','물레히','무료히','무리히','무례히이','물애이','물애 희','물애희','물애히','무례희','무례의','무래희','무래의','무레의','무레 이','무래 이','무 레 히','무 래 히','무 레이','무 래이','무레 이','무래 이','물 에이','물 에 히','물 에 희','물레 희','물레 이','몰에이','몰에히','몰에 희','문에이','문에히','문에 희','무례잉','무레이이','물에이이'],
   '행하지': ['행하지','행 하지','향하지','형하지','해앟지','해아지','행아지','행하 지','행하지요'],
   '되고': ['되고','대구','대고','되고요','된고','대구요'],
-  '내게': ['내게','네게','4개','내 개','네 개','내게에','내게 있는','네게 있는','4개 있는'],
-  '온전한': ['온전한','운전한','온전한 것이','운전한 것이','온 전한','운 전한','온전 한'],
+  '내게': ['내게','네게','4개','내 개','네 개','내게에'],
+  '온전한': ['온전한','운전한','온 전한','운 전한','온전 한'],
   '예언도': ['예언도','예영도','예현도','예연도','예원도','예언 도','예영 도','예현 도','예연 도'],
   '폐하고': ['폐하고','패하고','폐 하고','패 하고','폐하 고','패하 고'],
   '방언도': ['방언도','강원도','방 온도','방언 도','강원 도','방온도','방원도','방연도'],
@@ -311,6 +328,8 @@ let micOn = false;
 let shouldRestart = false;
 let resettingSpeech = false;
 let finalText = '';
+let confirmedTranscript = '';
+let currentInterimTranscript = '';
 let lastChecked = '';
 let timerId = null;
 let startedAt = null;
@@ -318,6 +337,13 @@ let audioCtx = null;
 let wrongTimer = null;
 let clearMessageTimer = null;
 let liveNorm = '';
+let currentVerseIndex = 0;
+let pendingScoreTimer = null;
+let lastScoreAt = 0;
+let pendingScoreText = '';
+let pendingScoreIsInterim = false;
+let pendingScoreGotFinal = false;
+const targetWindowCache = {};
 
 function normalizeKoreanText(text){
   return text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]/g,'').toLowerCase();
@@ -382,21 +408,57 @@ function buildAnswerContext(phrase){
   };
 }
 
-function buildTargetSegments(words){
+function buildVerseContexts(verses){
+  let cursor = 0;
+  return verses.map((text, index) => {
+    const words = splitKoreanWords(text);
+    const start = FULL_WORDS.findIndex((_, wordIndex) => {
+      if(wordIndex < cursor) return false;
+      return normalizeKoreanText(FULL_WORDS.slice(wordIndex, wordIndex + words.length).join(' ')) === normalizeKoreanText(text);
+    });
+    if(start >= 0) cursor = start + words.length;
+    return {
+      index,
+      text,
+      words,
+      start: Math.max(0, start),
+      norm: normalizeKoreanText(text)
+    };
+  });
+}
+
+function buildTargetSegments(words, baseStart=0){
   const segments = [];
-  for(let length = 1; length <= words.length; length++){
+  const maxLength = Math.min(28, words.length);
+  for(let length = 1; length <= maxLength; length++){
     for(let start = 0; start <= words.length - length; start++){
       const text = words.slice(start, start + length).join(' ');
       segments.push({
-        start,
+        start: baseStart + start,
         text,
         words: words.slice(start, start + length),
         norm: normalizeKoreanText(text)
       });
     }
   }
-  segments.push({ start: 0, text: FULL, words, norm: normalizeKoreanText(FULL) });
+  segments.push({ start: baseStart, text: words.join(' '), words, norm: normalizeKoreanText(words.join(' ')) });
   return segments;
+}
+
+function getTargetWindow(index=currentVerseIndex){
+  const from = Math.max(0, index - 1);
+  const to = Math.min(VERSE_CONTEXTS.length - 1, index + 1);
+  const cacheKey = `${from}-${to}`;
+  if(targetWindowCache[cacheKey]) return targetWindowCache[cacheKey];
+  const words = VERSE_CONTEXTS.slice(from, to + 1).flatMap(verse => verse.words);
+  const baseStart = VERSE_CONTEXTS[from]?.start || 0;
+  targetWindowCache[cacheKey] = {
+    from,
+    to,
+    words,
+    segments: buildTargetSegments(words, baseStart)
+  };
+  return targetWindowCache[cacheKey];
 }
 
 function escapeRegExp(text){
@@ -472,7 +534,7 @@ function getSegmentThreshold(normLength){
   return .75;
 }
 
-function getBestMatchingVerseOrSegment(transcript, targetSegments=FULL_SEGMENTS){
+function getBestMatchingVerseOrSegment(transcript, targetSegments=getTargetWindow().segments){
   const transcriptNorm = normalizeForComparison(transcript);
   if(!transcriptNorm) return { score: 0, text: '', norm: '', words: [] };
   if(FULL_NORM.includes(transcriptNorm)){
@@ -534,10 +596,10 @@ function scoreVerseWindow(spokenWords, start, length){
   return scoreWordsAgainstAnswer(spokenWords, FULL_WORDS.slice(start, start + length));
 }
 
-function findBestVerseWindow(spokenWords){
+function findBestVerseWindow(spokenWords, targetWindow=getTargetWindow()){
   let best = { score: 0, words: spokenWords };
   const minLength = Math.max(1, spokenWords.length - 2);
-  const maxLength = Math.min(FULL_WORDS.length, spokenWords.length + 2);
+  const maxLength = Math.min(targetWindow.words.length, spokenWords.length + 2);
 
   CRITICAL_CONTEXTS.forEach(context => {
     const score = scoreWordsAgainstAnswer(spokenWords, context.words);
@@ -547,15 +609,40 @@ function findBestVerseWindow(spokenWords){
   });
 
   for(let length = minLength; length <= maxLength; length++){
-    for(let start = 0; start <= FULL_WORDS.length - length; start++){
-      const score = scoreVerseWindow(spokenWords, start, length);
+    for(let start = 0; start <= targetWindow.words.length - length; start++){
+      const expectedWords = targetWindow.words.slice(start, start + length);
+      const score = scoreWordsAgainstAnswer(spokenWords, expectedWords);
       if(score > best.score){
-        best = { score, words: FULL_WORDS.slice(start, start + length) };
+        best = { score, words: expectedWords };
       }
     }
   }
 
   return best;
+}
+
+function normalizeRecentChunk(chunk){
+  return applyCorrectionMap(applyPhraseCorrections(chunk.slice(-RECENT_SCORE_CHARS)));
+}
+
+function scoreRecentChunkAgainstTarget(chunk, targetWindow=getTargetWindow()){
+  const normalizedChunk = normalizeRecentChunk(chunk);
+  const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(chunk).includes(pattern));
+  const bestString = getBestMatchingVerseOrSegment(normalizedChunk, targetWindow.segments);
+  const spokenWords = splitKoreanWords(normalizedChunk);
+  const bestWords = findBestVerseWindow(spokenWords, targetWindow);
+  const stringThreshold = getSegmentThreshold(bestString.norm.length);
+  const accepted = !hasStrictWrongExpression && (bestString.score >= stringThreshold || bestWords.score >= .82);
+  return {
+    accepted,
+    text: accepted && bestString.score >= stringThreshold ? bestString.text : normalizedChunk,
+    norm: normalizeForComparison(accepted && bestString.score >= stringThreshold ? bestString.text : normalizedChunk),
+    score: bestWords.score,
+    stringScore: bestString.score,
+    stringMatchText: bestString.text,
+    matchStart: typeof bestString.start === 'number' ? bestString.start : -1,
+    hasStrictWrongExpression
+  };
 }
 
 function normalizeTranscriptByVerse(raw){
@@ -608,6 +695,75 @@ function compareWithAnswer(normalizedTranscript){
   });
 }
 
+function extractNewChunk(event){
+  let finalChunk = '';
+  let interimChunk = '';
+  for(let i = event.resultIndex; i < event.results.length; i++){
+    const text = event.results[i][0].transcript;
+    if(event.results[i].isFinal) finalChunk += `${text} `;
+    else interimChunk += text;
+  }
+  return { finalChunk: finalChunk.trim(), interimChunk: interimChunk.trim() };
+}
+
+function commitFinalTranscript(chunk){
+  if(!chunk) return;
+  confirmedTranscript = `${confirmedTranscript} ${chunk}`.replace(/\s+/g, ' ').trim();
+  finalText = confirmedTranscript;
+  currentInterimTranscript = '';
+}
+
+function updateInterimTranscript(chunk){
+  currentInterimTranscript = chunk || '';
+}
+
+function getRecentTranscriptWindow(){
+  return `${confirmedTranscript} ${currentInterimTranscript}`.replace(/\s+/g, ' ').trim().slice(-RECENT_SCORE_CHARS);
+}
+
+function updateCurrentVerseFromMatch(result){
+  if(!result || typeof result.matchStart !== 'number' || result.matchStart < 0) return;
+  for(let i = VERSE_CONTEXTS.length - 1; i >= 0; i--){
+    if(result.matchStart >= VERSE_CONTEXTS[i].start){
+      currentVerseIndex = Math.max(currentVerseIndex, Math.min(VERSE_CONTEXTS.length - 1, i + 1));
+      return;
+    }
+  }
+}
+
+function throttledScoreUpdate(chunk, isInterim=false, gotFinal=false){
+  pendingScoreText = chunk;
+  pendingScoreIsInterim = isInterim;
+  pendingScoreGotFinal = gotFinal;
+  const now = Date.now();
+  const elapsed = now - lastScoreAt;
+  if(elapsed >= SCORE_THROTTLE_MS){
+    runScoreUpdate();
+    return;
+  }
+  clearTimeout(pendingScoreTimer);
+  pendingScoreTimer = setTimeout(runScoreUpdate, SCORE_THROTTLE_MS - elapsed);
+}
+
+function runScoreUpdate(){
+  clearTimeout(pendingScoreTimer);
+  pendingScoreTimer = null;
+  lastScoreAt = Date.now();
+  if(!pendingScoreText) return;
+  checkSpeech(pendingScoreText, pendingScoreIsInterim, pendingScoreGotFinal);
+}
+
+function handleSpeechResult(event){
+  if(!micOn || resettingSpeech) return;
+  const { finalChunk, interimChunk } = extractNewChunk(event);
+  if(finalChunk) commitFinalTranscript(finalChunk);
+  updateInterimTranscript(interimChunk);
+
+  const visibleText = `${confirmedTranscript} ${currentInterimTranscript}`.replace(/\s+/g, ' ').trim();
+  setRecognized(visibleText || '듣고 있습니다', visibleText ? '' : 'empty');
+  throttledScoreUpdate(getRecentTranscriptWindow(), Boolean(interimChunk), Boolean(finalChunk));
+}
+
 // 브라우저 콘솔에서 runNormalizationExamples()를 호출해 보정 예시를 빠르게 확인할 수 있다.
 // 통과: "물에 희 행하지 아니하며" -> "무례히 행하지 아니하며"
 // 통과: "우리는깽 가리가 되고" -> "울리는 꽹과리가 되고"
@@ -649,20 +805,7 @@ function initSpeech(){
     setMicUi(true);
   };
 
-  recognition.onresult = event => {
-    if(!micOn || resettingSpeech) return;
-    let interim = '';
-    let gotFinal = false;
-    for(let i = event.resultIndex; i < event.results.length; i++){
-      const text = event.results[i][0].transcript;
-      if(event.results[i].isFinal){
-        finalText += text;
-        gotFinal = true;
-      }
-      else interim += text;
-    }
-    checkSpeech(finalText + interim, Boolean(interim), gotFinal);
-  };
+  recognition.onresult = handleSpeechResult;
 
   recognition.onerror = event => {
     if(event.error === 'not-allowed'){
@@ -723,7 +866,7 @@ function stopMic(){
 
 function checkSpeech(raw, isInterim, gotFinal=false){
   const text = raw.trim();
-  const normalizedTranscript = normalizeTranscriptByVerse(text);
+  const normalizedTranscript = scoreRecentChunkAgainstTarget(text, getTargetWindow(currentVerseIndex));
   const norm = normalizedTranscript.norm;
   liveNorm = norm;
   if(!norm){
@@ -738,6 +881,7 @@ function checkSpeech(raw, isInterim, gotFinal=false){
 
   if(compareWithAnswer(normalizedTranscript)){
     clearTimeout(wrongTimer);
+    updateCurrentVerseFromMatch(normalizedTranscript);
     setStatus('맞게 말하고 있습니다', 'ok');
     setRecognized(normalizedTranscript.text || text, 'ok');
     return;
@@ -785,8 +929,16 @@ function clearAllSpeechImmediately(){
 
 function resetBufferOnly(){
   finalText = '';
+  confirmedTranscript = '';
+  currentInterimTranscript = '';
   lastChecked = '';
   liveNorm = '';
+  pendingScoreText = '';
+  pendingScoreIsInterim = false;
+  pendingScoreGotFinal = false;
+  currentVerseIndex = 0;
+  clearTimeout(pendingScoreTimer);
+  pendingScoreTimer = null;
 }
 
 function clearAttempt(){
