@@ -101,11 +101,12 @@ const FULL_WORDS = splitKoreanWords(FULL);
 const FULL_WORD_NORMS = new Set(FULL_WORDS.map(normalizeKoreanText));
 const FULL_NORM = normalizeKoreanText(FULL);
 const CORRECTION_GROUPS = {
-  '울리는': ['울리는','울리 는','울리는이','올리는','올리 는','울린은','울리네','울리며','울린','울리 는데','울리는 데','울리는게','울리는 게','울리게','울리기','울림은'],
-  '꽹과리': ['꽹과리','꽹가리','깽과리','깽가리','꽹거리','깽거리','꽹과리가','꽹가리가','깽가리가','꽹과리와','꽹거리와','깽거리와','괭과리','괭가리','괭거리','꽹괄이','깽괄이','꽹고리','깽고리','꽹과 리','꽹 과리','깽 과리','꽹 과 리','깽 과 리','꽹가 리','깽가 리','꽹가리 되고','깽가리 되고','꽹과리 되고','꽹거리 되고','깽거리 되고'],
-  '무례히': ['무례히','무례이','무례하게','무례 해','무례해','무례한','무래히','무래이','무례','무례히이','물에히','무료히','무레히','무래하게','무례 하게','무례 히','무례이 행하지','무례히 행하지','무례하게 행하지','무례해 행하지','무리히','무리하게'],
-  '아니하되': ['아니하되','아니 하되','아니하대','아니 하대','아니하돼','아니 하돼','아니하되요','아니 하되요','안이하되','안이 하되','아니하여도','아니 하여도','아니하더','아니 하더','아니하데','아니 하데','아니하되 사랑','아니 하되 사랑','아니하대 사랑','아니하돼 사랑','아니하되 예언','아니 하되 예언','아니하대 예언','아니하돼 예언','아니하고','아니 하고','아니하며','아니 하며'],
-  '떨어지지': ['떨어지지','떨어 지지','떨어지질','떨어지지요','떨어지지 않고','떨어지지 아니하되','떠러지지','떠러 지지','떨어지지는','떨어지지가','떨어지지니','떨어지지 아니 하되','떨어지지 아니하대','떨어지지 아니하돼'],
+  '울리는': ['우리는','우리는요','우리 는','우리는데','우리는가','우리는 게','울리는','울리는요','울리 는','울리는데','울리네','울리는가','울리는 게','울리는게','울이는','울이는요','우리를은','울린','울린는','우릴는','울리며','울리기','울림은','울리는이','올리는','올리 는','울린은','울리 는데','울리는 데','울리게','울리느','울리니','울리은','울리는은','울리는를','울리는와','우리는은','우리는를','우리는와','우린는','우리는 데','우리는데요'],
+  '꽹과리': ['꽹과리','꽹과리가','꽹과리를','꽹가리','꽹가리가','꽹가리를','꽹관리','꽹관리가','꽹관리를','괭과리','괭과리가','괭과리를','괭가리','괭가리가','깽과리','깽과리가','깽과리를','깽가리','깽가리가','팽과리','팽가리','꽹거리','꽹거리가','꽹거리를','깽거리','깽거리가','깽거리를','꽹과린','꽹가린','꽹 과리','꽹 과 리','깽 과리','깽 과 리','꽹 가리','깽 가리','꽹괄이','깽괄이','꽹고리','깽고리','꽹과리와','꽹거리와','깽거리와','괭거리','꽹가 리','깽가 리','꽹가리 되고','깽가리 되고','꽹과리 되고','꽹관리 되고','깽거리 되고','꽹괄이가','깽괄이가','꽹고리가','깽고리가','꽹고리를','깽고리를','꽹관 리','깽관리','깽관리가','깽관리를','꽹가래','깽가래','꽹가래가','깽가래가','꽹과리가되고','꽹관리가되고','깽가리가되고'],
+  '무례히': ['무례히','무례이','무례 히','무례 이','무래히','무래이','무레이','무레히','무레희','물에이','물에 희','물에희','물에히','물레히','무료히','무리히','무례히이','물애이','물애 희','물애희','물애히','무례희','무례의','무래희','무래의','무레의','무레 이','무래 이','무 레 히','무 래 히','무 레이','무 래이','무레 이','무래 이','물 에이','물 에 히','물 에 희','물레 희','물레 이','몰에이','몰에히','몰에 희','문에이','문에히','문에 희','무례잉','무레이이','물에이이'],
+  '행하지': ['행하지','행 하지','향하지','형하지','해앟지','해아지','행아지','행하 지','행하지요'],
+  '아니하되': ['아니하되','아니 하되','아니하대','아니 하대','아니하돼','아니 하돼','아니하데','아니 하데','아니하제','아니하디','아니하네','아니한대','아니한되','안이하되','안이 하되','안이하대','안이한대','안이하네','아니하되요','아니 하되요','아니하더','아니 하더','아니하되 사랑','아니 하되 사랑','아니하대 사랑','아니하돼 사랑','아니하되 예언','아니 하되 예언','아니하대 예언','아니하돼 예언','아니아되','아니아대','아니아돼','아니아데','안이하돼','안이하데','아니 한대','아니 한되','아니 한데','아니하뒈','아니 하뒈','아니하되에','아니하대에','아니하되요'],
+  '떨어지지': ['떨어지지','떨어 지지','떠러지지','떠러 지지','떨어지질','떨어지지요','떨어지지는','떨어지지가','떨어지지니','떨어지지 않고','떨어지지 아니하되','떨어지지 아니 하되','떨어지지 아니하대','떨어지지 아니하돼','떨 어지지','떨 어 지지','떠러지질','떠러지지요','떠러지지는','떨어질지','떨어 지질','떨어지지는요','떨어지지가요'],
   '소리나는': ['소리나는','소리 나는','소리가 나는','소리나 는','소리난','소리나는이','소리 나는이','소리 나네','소리나네','소리 나는 구리','소리나는 구리','소리가 나는 구리','소리난 구리'],
   '구리': ['구리','굴이','구리가','구리와','구리로','구리 의','쿠리','꾸리','구리와 울리는','구리 울리는','굴이 울리는'],
   '교만하지': ['교만하지','교만 하지','교만치','교만치 아니하며','교만하지 아니하며','교만하지않으며','교만하지 안으며','교만하지 아니 하며','교만하지 아니하고','교만하지 않으며','교만하지 아니 하며'],
@@ -124,8 +125,16 @@ const CORRECTION_TARGETS = {
   '소리나는': '소리 나는'
 };
 const PHRASE_CORRECTION_MAP = {
+  '우리는 꽹가리가 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹관리가 되고': '울리는 꽹과리가 되고',
+  '우리는 깽가리가 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹가리 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹관리 되고': '울리는 꽹과리가 되고',
+  '우리는 깽가리 되고': '울리는 꽹과리가 되고',
   '울리는 깽가리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹가리가 되고': '울리는 꽹과리가 되고',
+  '울리는 꽹관리가 되고': '울리는 꽹과리가 되고',
+  '울리는 깽가리 되고': '울리는 꽹과리가 되고',
   '울리는 꽹거리 되고': '울리는 꽹과리가 되고',
   '울리는 깽거리 되고': '울리는 꽹과리가 되고',
   '소리가 나는 구리': '소리 나는 구리와',
@@ -134,8 +143,27 @@ const PHRASE_CORRECTION_MAP = {
   '구리 울리는': '구리와 울리는',
   '굴이 울리는': '구리와 울리는',
   '무례이 행하지': '무례히 행하지',
-  '무례하게 행하지': '무례히 행하지',
-  '무례해 행하지': '무례히 행하지',
+  '무례이 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에이 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에 희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에히 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물애이 행하지 아니하며': '무례히 행하지 아니하며',
+  '물애 희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물애히 행하지 아니하며': '무례히 행하지 아니하며',
+  '물레히 행하지 아니하며': '무례히 행하지 아니하며',
+  '물레 희 행하지 아니하며': '무례히 행하지 아니하며',
+  '몰에이 행하지 아니하며': '무례히 행하지 아니하며',
+  '몰에 희 행하지 아니하며': '무례히 행하지 아니하며',
+  '문에이 행하지 아니하며': '무례히 행하지 아니하며',
+  '문에 희 행하지 아니하며': '무례히 행하지 아니하며',
+  '무레이 행하지 아니하며': '무례히 행하지 아니하며',
+  '무래이 행하지 아니하며': '무례히 행하지 아니하며',
+  '무래히 행하지 아니하며': '무례히 행하지 아니하며',
+  '무레희 행하지 아니하며': '무례히 행하지 아니하며',
+  '무료히 행하지 아니하며': '무례히 행하지 아니하며',
+  '무리히 행하지 아니하며': '무례히 행하지 아니하며',
+  '무레히 행하지 아니하며': '무례히 행하지 아니하며',
   '무례 히 행하지': '무례히 행하지',
   '아니 하되': '아니하되',
   '아니 하대': '아니하되',
@@ -147,7 +175,14 @@ const PHRASE_CORRECTION_MAP = {
   '떨어지지 아니 하되': '떨어지지 아니하되',
   '떨어지지 아니하대': '떨어지지 아니하되',
   '떨어지지 아니하돼': '떨어지지 아니하되',
+  '떨어지지 아니하데': '떨어지지 아니하되',
+  '떨어지지 아니 하대': '떨어지지 아니하되',
+  '떨어지지 아니 하돼': '떨어지지 아니하되',
   '떠러지지 아니하대': '떨어지지 아니하되',
+  '떠러지지 아니하돼': '떨어지지 아니하되',
+  '떠러지지 아니하데': '떨어지지 아니하되',
+  '떠러 지지 아니하대': '떨어지지 아니하되',
+  '떨어 지지 아니하대': '떨어지지 아니하되',
   '교만치 아니하며': '교만하지 아니하며',
   '교만하지않으며': '교만하지 아니하며',
   '교만하지 안으며': '교만하지 아니하며',
@@ -189,6 +224,25 @@ const PHRASE_CORRECTION_MAP = {
 };
 const correctionMap = buildCorrectionMap(CORRECTION_GROUPS);
 const CORRECTION_PHRASES = buildCorrectionPhrases(CORRECTION_GROUPS);
+const CRITICAL_CONTEXTS = [
+  buildAnswerContext('소리 나는 구리와 울리는 꽹과리가 되고'),
+  buildAnswerContext('무례히 행하지 아니하며'),
+  buildAnswerContext('사랑은 언제까지나 떨어지지 아니하되')
+].filter(Boolean);
+// "무례히"와 뜻이 달라지는 표현은 유사도가 높아도 정답으로 보정하지 않는다.
+const STRICT_WRONG_PATTERNS = [
+  '무례하게행하지',
+  '무례해행하지',
+  '무례한행하지',
+  '무례행하지',
+  '무리하게행하지',
+  '무래하게행하지',
+  '떨어지지아니하며',
+  '떨어지지아니하고',
+  '떨어지지아니하여도',
+  '떠러지지아니하며',
+  '떠러지지아니하고'
+];
 
 let recognition = null;
 let micOn = false;
@@ -250,6 +304,20 @@ function buildCorrectionPhrases(groups){
     });
   });
   return phrases.sort((a, b) => normalizeKoreanText(b.variant).length - normalizeKoreanText(a.variant).length);
+}
+
+function buildAnswerContext(phrase){
+  const phraseNorm = normalizeKoreanText(phrase);
+  const phraseWords = splitKoreanWords(phrase);
+  const start = FULL_WORDS.findIndex((_, index) => {
+    return normalizeKoreanText(FULL_WORDS.slice(index, index + phraseWords.length).join(' ')) === phraseNorm;
+  });
+  if(start < 0) return null;
+  return {
+    phrase,
+    start,
+    words: FULL_WORDS.slice(start, start + phraseWords.length)
+  };
 }
 
 function escapeRegExp(text){
@@ -320,11 +388,11 @@ function getTokenMatchScore(spoken, expected){
 
   if(spokenNorm.length <= 2 || expectedNorm.length <= 2) return 0;
   const similarity = calculateSimilarity(spokenNorm, expectedNorm);
-  return similarity >= .78 ? similarity : 0;
+  const threshold = Math.max(.75, .82 - Math.min(spokenNorm.length, expectedNorm.length) * .01);
+  return similarity >= threshold ? similarity : 0;
 }
 
-function scoreVerseWindow(spokenWords, start, length){
-  const expectedWords = FULL_WORDS.slice(start, start + length);
+function scoreWordsAgainstAnswer(spokenWords, expectedWords){
   const maxLength = Math.max(spokenWords.length, expectedWords.length);
   let total = 0;
 
@@ -341,10 +409,21 @@ function scoreVerseWindow(spokenWords, start, length){
   return total / maxLength;
 }
 
+function scoreVerseWindow(spokenWords, start, length){
+  return scoreWordsAgainstAnswer(spokenWords, FULL_WORDS.slice(start, start + length));
+}
+
 function findBestVerseWindow(spokenWords){
   let best = { score: 0, words: spokenWords };
   const minLength = Math.max(1, spokenWords.length - 2);
   const maxLength = Math.min(FULL_WORDS.length, spokenWords.length + 2);
+
+  CRITICAL_CONTEXTS.forEach(context => {
+    const score = scoreWordsAgainstAnswer(spokenWords, context.words);
+    if(score > best.score){
+      best = { score: score + .03, words: context.words };
+    }
+  });
 
   for(let length = minLength; length <= maxLength; length++){
     for(let start = 0; start <= FULL_WORDS.length - length; start++){
@@ -361,8 +440,9 @@ function findBestVerseWindow(spokenWords){
 function normalizeTranscriptByVerse(raw){
   const mappedText = applyCorrectionMap(raw);
   const spokenWords = splitKoreanWords(mappedText);
+  const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(raw).includes(pattern));
   if(!spokenWords.length){
-    return { text: '', norm: '', score: 0 };
+    return { text: '', norm: '', score: 0, hasStrictWrongExpression };
   }
 
   const best = findBestVerseWindow(spokenWords);
@@ -372,15 +452,34 @@ function normalizeTranscriptByVerse(raw){
   return {
     text: normalizedText,
     norm: normalizeKoreanText(normalizedText),
-    score: best.score
+    score: best.score,
+    hasStrictWrongExpression
   };
 }
 
+function compareWithAnswer(normalizedTranscript){
+  if(normalizedTranscript.hasStrictWrongExpression) return false;
+  if(!normalizedTranscript.norm) return false;
+  if(FULL_NORM.includes(normalizedTranscript.norm)) return true;
+  if(normalizedTranscript.score >= .82) return true;
+
+  return CRITICAL_CONTEXTS.some(context => {
+    const contextNorm = normalizeKoreanText(context.words.join(' '));
+    return calculateSimilarity(normalizedTranscript.norm, contextNorm) >= .86;
+  });
+}
+
 // 브라우저 콘솔에서 runNormalizationExamples()를 호출해 보정 예시를 빠르게 확인할 수 있다.
+// 통과: "물에 희 행하지 아니하며" -> "무례히 행하지 아니하며"
+// 탈락: "무례하게 행하지 아니하며"는 "무례히"가 아니므로 오답
 function runNormalizationExamples(){
   const examples = [
-    ['울리는 깽가리가 되고', '울리는 꽹과리가 되고'],
-    ['무례하게 행하지 아니하며', '무례히 행하지 아니하며'],
+    ['우리는 꽹가리가 되고', '울리는 꽹과리가 되고'],
+    ['무례이 행하지 아니하며', '무례히 행하지 아니하며'],
+    ['물에 희 행하지 아니하며', '무례히 행하지 아니하며'],
+    ['물애이 행하지 아니하며', '무례히 행하지 아니하며'],
+    ['문에 희 행하지 아니하며', '무례히 행하지 아니하며'],
+    ['무래이 행하지 아니하며', '무례히 행하지 아니하며'],
     ['떨어지지 아니하대', '떨어지지 아니하되']
   ];
   return examples.map(([input, expected]) => ({
@@ -495,7 +594,7 @@ function checkSpeech(raw, isInterim, gotFinal=false){
   if(norm === lastChecked) return;
   lastChecked = norm;
 
-  if(FULL_NORM.includes(norm)){
+  if(compareWithAnswer(normalizedTranscript)){
     clearTimeout(wrongTimer);
     setStatus('맞게 말하고 있습니다', 'ok');
     setRecognized(normalizedTranscript.text || text, 'ok');
