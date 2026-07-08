@@ -40,8 +40,6 @@
   .timer-display.running{color:var(--mic-color);}
   .timer-display.done{color:var(--ok);}
   .timer-label{font-size:11px;color:var(--muted);margin-top:2px;}
-  .best-time{font-size:12px;color:var(--muted);}
-  .best-time span{color:var(--gold);font-weight:700;}
 
   /* 마이크 섹션 */
   .mic-section{
@@ -122,7 +120,6 @@
     padding:4px 14px;font-size:13px;font-weight:700;color:var(--ink);
     margin-top:6px;
   }
-  .time-badge.best{background:#fdebc0;color:var(--gold);}
 
   .sec-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.07em;margin-bottom:8px;}
   .diff-box,.ans-box{
@@ -223,6 +220,8 @@ const LIMITED_PHRASE_CORRECTIONS = {
   '꽹가리가 되고': '꽹과리가 되고',
   '꽹관리가 되고': '꽹과리가 되고',
   '깽과이가 되고': '꽹과리가 되고',
+  '꽹과리가 대구': '꽹과리가 되고',
+  '깽가리가 대구': '꽹과리가 되고',
   '물에 이행하지 아니하며': '무례히 행하지 아니하며',
   '물에 행하지 아니하며': '무례히 행하지 아니하며',
   '우리 이행하지 아니하며': '무례히 행하지 아니하며',
@@ -414,19 +413,14 @@ let latestInterimTranscript = '';
 let displayTranscript = '';
 let scoringTranscript = '';
 let silenceTimer = null;
-let currentWordIndex = 0;
-let processedWordCount = 0;
-let lastErrorDisplayIndex = -1;
-let lastErrorExpectedWord = '';
 let wrongDisplayIndices = new Set();
-let hasWarnedForCurrentError = false;
+let warnedWrongIndices = new Set();
 let restartWindowStartedAt = 0;
 let restartAttempts = 0;
 const SILENCE_DECISION_MS = 2200;
 const RESTART_WINDOW_MS = 10000;
 const MAX_RESTARTS_PER_WINDOW = 5;
-const FULL_WORDS = splitSpeechWords(FULL);
-const FULL_WORD_STRIPS = FULL_WORDS.map(strip);
+const FULL_STRIPPED = strip(FULL);
 
 function buildSpeechEvaluation(rawText){
   const displayText = normalizeSpeechSpaces(rawText);
@@ -446,72 +440,52 @@ function updateLiveTranscripts(rawText){
   return evaluation;
 }
 
-function getExpectedWord(){
-  return FULL_WORDS[currentWordIndex] || '';
+function isCorrectSpokenChunk(word){
+  const normalized = strip(word);
+  return normalized.length > 0 && FULL_STRIPPED.includes(normalized);
 }
 
-function markWrong(evaluation, scoringWordIndex){
-  lastErrorDisplayIndex = Math.min(scoringWordIndex, Math.max(evaluation.displayWords.length - 1, 0));
-  wrongDisplayIndices.add(lastErrorDisplayIndex);
-  lastErrorExpectedWord = getExpectedWord();
-  if(!hasWarnedForCurrentError){
-    playWrongSound();
-    hasWarnedForCurrentError = true;
-  }
-  const st = document.getElementById('micStatus');
-  st.className = 'mic-status listening';
-  st.textContent = lastErrorExpectedWord
-    ? `틀렸습니다. 다시 ${lastErrorExpectedWord}부터 이어서 말하세요`
-    : '틀렸습니다. 다시 이어서 말하세요';
-}
-
-function clearWrongState(clearHistory=false){
-  lastErrorDisplayIndex = -1;
-  lastErrorExpectedWord = '';
-  if(clearHistory) wrongDisplayIndices.clear();
-  hasWarnedForCurrentError = false;
-}
-
-function processWords(scoringWords, startIndex, evaluation){
-  let localProcessed = startIndex;
-  while(localProcessed < scoringWords.length && currentWordIndex < FULL_WORD_STRIPS.length){
-    const spokenWord = strip(scoringWords[localProcessed]);
-    const expectedWord = FULL_WORD_STRIPS[currentWordIndex];
-    if(spokenWord === expectedWord){
-      currentWordIndex++;
-      clearWrongState();
-    } else {
-      if(lastErrorDisplayIndex < 0) markWrong(evaluation, localProcessed);
+function processDisplayWords(evaluation){
+  evaluation.displayWords.forEach((word, index) => {
+    const scoringWord = evaluation.scoringWords[index] || word;
+    if(isCorrectSpokenChunk(scoringWord)){
+      wrongDisplayIndices.delete(index);
+      warnedWrongIndices.delete(index);
+      return;
     }
-    localProcessed++;
+    wrongDisplayIndices.add(index);
+    if(!warnedWrongIndices.has(index)){
+      warnedWrongIndices.add(index);
+      playWrongSound();
+    }
+  });
+
+  if(wrongDisplayIndices.size > 0){
+    const st = document.getElementById('micStatus');
+    st.className = 'mic-status listening';
+    st.textContent = '틀린 부분이 있습니다. 멈추지 말고 이어서 암송하세요';
   }
-  processedWordCount = Math.max(processedWordCount, localProcessed);
-  return localProcessed;
+}
+
+function clearWrongState(){
+  wrongDisplayIndices.clear();
+  warnedWrongIndices.clear();
 }
 
 function evaluateIncomingSpeech(rawText, options={}){
   const { processNewWords = false, hasInterim = false } = options;
   const evaluation = updateLiveTranscripts(rawText);
 
-  if(processedWordCount > evaluation.scoringWords.length){
-    processedWordCount = evaluation.scoringWords.length;
-  }
-
   if(processNewWords){
-    processWords(evaluation.scoringWords, processedWordCount, evaluation);
+    processDisplayWords(evaluation);
   }
 
   renderRealtime(evaluation, hasInterim);
 
-  if(currentWordIndex >= FULL_WORD_STRIPS.length){
-    completeSession();
-    return evaluation;
-  }
-
-  if(lastErrorDisplayIndex < 0){
+  if(wrongDisplayIndices.size === 0){
     const st = document.getElementById('micStatus');
     st.className = 'mic-status listening';
-    st.textContent = '🔴 듣는 중… 틀려도 멈추지 않고 계속 이어집니다';
+    st.textContent = '🔴 듣는 중… 어느 구절부터 말해도 계속 확인합니다';
   }
 
   return evaluation;
@@ -618,9 +592,11 @@ function renderRealtime(evaluation, hasInterim){
   let html = '';
   evaluation.displayWords.forEach((word, index) => {
     const isLast = index === evaluation.displayWords.length - 1;
-    if(wrongDisplayIndices.has(index) || index === lastErrorDisplayIndex){
+    const scoringWord = evaluation.scoringWords[index] || word;
+    const isCorrect = isCorrectSpokenChunk(scoringWord);
+    if(wrongDisplayIndices.has(index)){
       html += `<span class="rt-bad">${word} </span>`;
-    } else if(index < Math.min(currentWordIndex, evaluation.displayWords.length)){
+    } else if(isCorrect){
       html += `<span class="rt-ok">${word} </span>`;
     } else if(isLast && hasInterim){
       html += `<span class="rt-interim">${word} </span>`;
@@ -642,8 +618,6 @@ function startListening(){
   latestInterimTranscript = '';
   displayTranscript = '';
   scoringTranscript = '';
-  currentWordIndex = 0;
-  processedWordCount = 0;
   clearWrongState(true);
   clearTimeout(silenceTimer);
   isListening = true;
@@ -808,8 +782,6 @@ function retry(){
   latestInterimTranscript = '';
   displayTranscript = '';
   scoringTranscript = '';
-  currentWordIndex = 0;
-  processedWordCount = 0;
   clearWrongState(true);
   clearTimeout(silenceTimer);
   const rec=document.getElementById('recognized');
