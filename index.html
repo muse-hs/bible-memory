@@ -160,9 +160,6 @@
       <div class="timer-display" id="timerDisplay">00:00</div>
       <div class="timer-label">암송 시간</div>
     </div>
-    <div style="text-align:right;">
-      <div class="best-time" id="bestTime">최고 기록: <span>-</span></div>
-    </div>
   </div>
 
   <!-- 마이크 -->
@@ -388,7 +385,6 @@ function vibrateCorrect(){
 let timerInterval = null;
 let timerSeconds = 0;
 let sessionTime = 0; // 이번 세션 경과 시간
-let bestTime = null;  // 최고 기록 (초)
 
 function timerStart(){
   timerSeconds = 0;
@@ -409,61 +405,156 @@ function formatTime(s){
   const sec = (s%60).toString().padStart(2,'0');
   return `${m}:${sec}`;
 }
-function updateBestTime(pct){
-  // 80% 이상일 때만 최고 기록 등록
-  if(pct < 80) return;
-  if(bestTime === null || sessionTime < bestTime){
-    bestTime = sessionTime;
-    const el = document.getElementById('bestTime');
-    el.innerHTML = `최고 기록: <span>${formatTime(bestTime)}</span> 🏆`;
-  }
-}
 
 // ── 음성인식 ─────────────────────────────────────────────────────
 let recognition = null;
 let isListening = false;
 let finalTranscript = '';
+let latestInterimTranscript = '';
 let displayTranscript = '';
 let scoringTranscript = '';
 let silenceTimer = null;
-let expectedIndex = 0;
+let currentWordIndex = 0;
+let processedWordCount = 0;
+let lastErrorDisplayIndex = -1;
+let lastErrorExpectedWord = '';
+let wrongDisplayIndices = new Set();
 let hasWarnedForCurrentError = false;
-const SILENCE_DECISION_MS = 1500;
+let restartWindowStartedAt = 0;
+let restartAttempts = 0;
+const SILENCE_DECISION_MS = 2200;
+const RESTART_WINDOW_MS = 10000;
+const MAX_RESTARTS_PER_WINDOW = 5;
 const FULL_WORDS = splitSpeechWords(FULL);
 const FULL_WORD_STRIPS = FULL_WORDS.map(strip);
 
 function buildSpeechEvaluation(rawText){
   const displayText = normalizeSpeechSpaces(rawText);
   const scoringText = applyLimitedCorrections(displayText);
-  const displayWords = splitSpeechWords(displayText);
-  const scoringWords = splitSpeechWords(scoringText);
-
-  let matchedCount = 0;
-  let mismatchIndex = -1;
-  for(let i=0;i<scoringWords.length;i++){
-    if(i >= FULL_WORD_STRIPS.length){
-      mismatchIndex = i;
-      break;
-    }
-    if(strip(scoringWords[i]) === FULL_WORD_STRIPS[i]) matchedCount++;
-    else {
-      mismatchIndex = i;
-      break;
-    }
-  }
-
   return {
     displayText,
     scoringText,
-    displayWords,
-    scoringWords,
-    matchedCount,
-    expectedIndex: matchedCount,
-    mismatchIndex,
-    mismatchDisplayIndex: mismatchIndex >= 0 ? Math.min(mismatchIndex, Math.max(displayWords.length - 1, 0)) : -1,
-    expectedWord: FULL_WORDS[matchedCount] || '',
-    isComplete: matchedCount === FULL_WORDS.length && mismatchIndex === -1
+    displayWords: splitSpeechWords(displayText),
+    scoringWords: splitSpeechWords(scoringText)
   };
+}
+
+function updateLiveTranscripts(rawText){
+  const evaluation = buildSpeechEvaluation(rawText);
+  displayTranscript = evaluation.displayText;
+  scoringTranscript = evaluation.scoringText;
+  return evaluation;
+}
+
+function getExpectedWord(){
+  return FULL_WORDS[currentWordIndex] || '';
+}
+
+function markWrong(evaluation, scoringWordIndex){
+  lastErrorDisplayIndex = Math.min(scoringWordIndex, Math.max(evaluation.displayWords.length - 1, 0));
+  wrongDisplayIndices.add(lastErrorDisplayIndex);
+  lastErrorExpectedWord = getExpectedWord();
+  if(!hasWarnedForCurrentError){
+    playWrongSound();
+    hasWarnedForCurrentError = true;
+  }
+  const st = document.getElementById('micStatus');
+  st.className = 'mic-status listening';
+  st.textContent = lastErrorExpectedWord
+    ? `틀렸습니다. 다시 ${lastErrorExpectedWord}부터 이어서 말하세요`
+    : '틀렸습니다. 다시 이어서 말하세요';
+}
+
+function clearWrongState(clearHistory=false){
+  lastErrorDisplayIndex = -1;
+  lastErrorExpectedWord = '';
+  if(clearHistory) wrongDisplayIndices.clear();
+  hasWarnedForCurrentError = false;
+}
+
+function processWords(scoringWords, startIndex, evaluation){
+  let localProcessed = startIndex;
+  while(localProcessed < scoringWords.length && currentWordIndex < FULL_WORD_STRIPS.length){
+    const spokenWord = strip(scoringWords[localProcessed]);
+    const expectedWord = FULL_WORD_STRIPS[currentWordIndex];
+    if(spokenWord === expectedWord){
+      currentWordIndex++;
+      clearWrongState();
+    } else {
+      if(lastErrorDisplayIndex < 0) markWrong(evaluation, localProcessed);
+    }
+    localProcessed++;
+  }
+  processedWordCount = Math.max(processedWordCount, localProcessed);
+  return localProcessed;
+}
+
+function evaluateIncomingSpeech(rawText, options={}){
+  const { processNewWords = false, hasInterim = false } = options;
+  const evaluation = updateLiveTranscripts(rawText);
+
+  if(processedWordCount > evaluation.scoringWords.length){
+    processedWordCount = evaluation.scoringWords.length;
+  }
+
+  if(processNewWords){
+    processWords(evaluation.scoringWords, processedWordCount, evaluation);
+  }
+
+  renderRealtime(evaluation, hasInterim);
+
+  if(currentWordIndex >= FULL_WORD_STRIPS.length){
+    completeSession();
+    return evaluation;
+  }
+
+  if(lastErrorDisplayIndex < 0){
+    const st = document.getElementById('micStatus');
+    st.className = 'mic-status listening';
+    st.textContent = '🔴 듣는 중… 틀려도 멈추지 않고 계속 이어집니다';
+  }
+
+  return evaluation;
+}
+
+function evaluatePauseState(){
+  if(!isListening) return;
+  const combined = normalizeSpeechSpaces(`${finalTranscript} ${latestInterimTranscript}`);
+  const evaluation = evaluateIncomingSpeech(combined, { processNewWords: true, hasInterim: false });
+  if(!evaluation) return;
+  renderRealtime(evaluation, false);
+}
+
+function scheduleSilenceEvaluation(){
+  clearTimeout(silenceTimer);
+  silenceTimer = setTimeout(() => {
+    if(isListening) evaluatePauseState();
+  }, SILENCE_DECISION_MS);
+}
+
+function scheduleRecognitionRestart(delay=300){
+  const now = Date.now();
+  if(!restartWindowStartedAt || now - restartWindowStartedAt > RESTART_WINDOW_MS){
+    restartWindowStartedAt = now;
+    restartAttempts = 0;
+  }
+  if(restartAttempts >= MAX_RESTARTS_PER_WINDOW){
+    const st = document.getElementById('micStatus');
+    st.className = 'mic-status listening';
+    st.textContent = '음성 인식이 잠시 불안정합니다. 잠깐 후 자동으로 다시 연결합니다';
+    setTimeout(() => {
+      if(isListening) scheduleRecognitionRestart(1200);
+    }, 1200);
+    restartWindowStartedAt = Date.now();
+    restartAttempts = 0;
+    return;
+  }
+  restartAttempts++;
+  setTimeout(() => {
+    if(isListening){
+      try{ recognition.start(); }catch(e){}
+    }
+  }, delay);
 }
 
 function initSpeech(){
@@ -475,13 +566,6 @@ function initSpeech(){
   recognition.interimResults = true;
 
   recognition.onstart = ()=>{
-    isListening = true;
-    finalTranscript = '';
-    displayTranscript = '';
-    scoringTranscript = '';
-    expectedIndex = 0;
-    hasWarnedForCurrentError = false;
-    timerStart();
     setListeningUI(true);
   };
 
@@ -491,141 +575,106 @@ function initSpeech(){
     for(let i=e.resultIndex;i<e.results.length;i++){
       const t = e.results[i][0].transcript;
       if(e.results[i].isFinal){
-        finalTranscript += t;
+        finalTranscript = normalizeSpeechSpaces(`${finalTranscript} ${t}`);
         gotFinal = true;
+      } else {
+        interim += t;
       }
-      else interim += t;
     }
-    const combined = normalizeSpeechSpaces(finalTranscript + interim);
-    const evaluation = buildSpeechEvaluation(combined);
-    displayTranscript = evaluation.displayText;
-    scoringTranscript = evaluation.scoringText;
-    expectedIndex = evaluation.expectedIndex;
-
-    renderRealtime(evaluation, !!interim);
-
-    if(evaluation.mismatchIndex >= 0 && gotFinal){
-      failCurrentSpeech(evaluation);
-      return;
-    }
-    if(evaluation.isComplete){
-      stopAndGrade();
-      return;
-    }
-
-    // 말 멈추면 1.8초 후 자동 채점
-    clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(()=>{
-      if(isListening) evaluateCurrentTranscript();
-    }, SILENCE_DECISION_MS);
+    latestInterimTranscript = normalizeSpeechSpaces(interim);
+    const combined = normalizeSpeechSpaces(`${finalTranscript} ${latestInterimTranscript}`);
+    evaluateIncomingSpeech(combined, { processNewWords: gotFinal, hasInterim: Boolean(latestInterimTranscript) });
+    scheduleSilenceEvaluation();
   };
 
   recognition.onerror = (e)=>{
-    if(e.error==='not-allowed'){
+    if(e.error === 'not-allowed'){
+      isListening = false;
       document.getElementById('micStatus').textContent='⚠️ 마이크 권한을 허용해주세요';
+      timerStop();
+      setListeningUI(false);
+      return;
     }
-    setListeningUI(false);
-    timerStop();
+    if(isListening && e.error === 'no-speech'){
+      scheduleSilenceEvaluation();
+    }
   };
 
   recognition.onend = ()=>{
-    if(isListening){ try{ recognition.start(); }catch(e){} }
+    if(isListening) scheduleRecognitionRestart(300);
   };
   return true;
 }
 
-// 실시간 텍스트 렌더 (displayTranscript는 원문 그대로, 채점만 내부 scoringTranscript 사용)
 function renderRealtime(evaluation, hasInterim){
   const rec = document.getElementById('recognized');
-  rec.className = 'recognized' + (isListening?' listening':'');
-  if(!evaluation.displayText.trim()){ rec.className+=' empty'; rec.textContent='듣고 있습니다…'; return; }
+  rec.className = 'recognized' + (isListening ? ' listening' : '');
+  if(!evaluation.displayText.trim()){
+    rec.className += ' empty';
+    rec.textContent = '듣고 있습니다…';
+    return;
+  }
 
-  const words = evaluation.displayWords;
   let html = '';
-  words.forEach((w,i)=>{
-    const isLast = i === words.length-1;
-    const isMismatch = evaluation.mismatchDisplayIndex === i;
-    if(isMismatch){
-      html += `<span class="rt-bad">${w} </span>`;
-    } else if(i < evaluation.matchedCount){
-      html += `<span class="rt-ok">${w} </span>`;
+  evaluation.displayWords.forEach((word, index) => {
+    const isLast = index === evaluation.displayWords.length - 1;
+    if(wrongDisplayIndices.has(index) || index === lastErrorDisplayIndex){
+      html += `<span class="rt-bad">${word} </span>`;
+    } else if(index < Math.min(currentWordIndex, evaluation.displayWords.length)){
+      html += `<span class="rt-ok">${word} </span>`;
     } else if(isLast && hasInterim){
-      html += `<span class="rt-interim">${w} </span>`;
+      html += `<span class="rt-interim">${word} </span>`;
     } else {
-      html += `<span>${w} </span>`;
+      html += `<span>${word} </span>`;
     }
   });
   rec.innerHTML = html;
 }
 
-function evaluateCurrentTranscript(){
-  const evaluation = buildSpeechEvaluation(displayTranscript || finalTranscript);
-  displayTranscript = evaluation.displayText;
-  scoringTranscript = evaluation.scoringText;
-  expectedIndex = evaluation.expectedIndex;
-  renderRealtime(evaluation, false);
-
-  if(evaluation.isComplete){
-    stopAndGrade();
-    return;
-  }
-  if(evaluation.mismatchIndex >= 0){
-    failCurrentSpeech(evaluation);
-    return;
-  }
-  const st = document.getElementById('micStatus');
-  st.className='mic-status listening';
-  st.textContent='🔴 듣는 중… 이어서 암송하세요';
-}
-
-function failCurrentSpeech(evaluation){
-  if(!hasWarnedForCurrentError){
-    playWrongSound();
-    vibrateWrong();
-    hasWarnedForCurrentError = true;
-  }
-  stopAndResetListening();
-  renderRealtime(evaluation, false);
-  const st = document.getElementById('micStatus');
-  st.className='mic-status listening';
-  st.textContent = evaluation.expectedWord
-    ? `틀렸습니다. 다음에 와야 할 단어: ${evaluation.expectedWord}`
-    : '틀렸습니다. 다시 시작하세요';
-}
-
 function toggleMic(){
   if(!recognition && !initSpeech()) return;
-  if(isListening) stopAndGrade();
+  if(isListening) stopSession();
   else startListening();
 }
 
 function startListening(){
   finalTranscript = '';
+  latestInterimTranscript = '';
   displayTranscript = '';
   scoringTranscript = '';
-  expectedIndex = 0;
-  hasWarnedForCurrentError = false;
+  currentWordIndex = 0;
+  processedWordCount = 0;
+  clearWrongState(true);
   clearTimeout(silenceTimer);
+  isListening = true;
+  timerStart();
   const rec = document.getElementById('recognized');
   rec.className='recognized empty';
   rec.textContent='듣고 있습니다…';
   document.getElementById('result').classList.remove('show');
+  setListeningUI(true);
   try{ recognition.start(); }catch(e){}
 }
 
-function stopAndResetListening(){
+function stopSession(){
   isListening = false;
   clearTimeout(silenceTimer);
   timerStop();
   try{ recognition.stop(); }catch(e){}
   setListeningUI(false);
+  const displayText = displayTranscript.trim();
+  const scoreText = scoringTranscript.trim();
+  if(scoreText) gradeText(displayText || scoreText, scoreText);
+  else document.getElementById('micStatus').textContent='인식된 내용이 없습니다. 다시 시도해보세요.';
 }
 
-function stopAndGrade(){
-  stopAndResetListening();
-  const text = scoringTranscript.trim();
-  if(text) gradeText(text);
-  else document.getElementById('micStatus').textContent='인식된 내용이 없습니다. 다시 시도해보세요.';
+function completeSession(){
+  isListening = false;
+  clearTimeout(silenceTimer);
+  timerStop();
+  try{ recognition.stop(); }catch(e){}
+  setListeningUI(false);
+  gradeText(displayTranscript.trim() || scoringTranscript.trim(), scoringTranscript.trim());
 }
 
 function setListeningUI(on){
@@ -634,11 +683,11 @@ function setListeningUI(on){
   if(on){
     btn.classList.add('listening');
     st.className='mic-status listening';
-    st.textContent='🔴 듣는 중… 말씀을 암송하세요 (끝나면 잠시 멈추세요)';
+    st.textContent='🔴 듣는 중… 잠깐 멈춰도 세션은 계속 유지됩니다';
   } else {
     btn.classList.remove('listening');
     st.className='mic-status done';
-    st.textContent='채점 완료 — 다시 누르면 재시작';
+    st.textContent='중지됨 — 다시 누르면 새로 시작합니다';
   }
 }
 
@@ -651,7 +700,7 @@ function gradeManual(){
   const t = applyLimitedCorrections(displayText);
   if(!t) return;
   timerStop();
-  gradeText(t);
+  gradeText(displayText, t);
 }
 
 // ── 채점 공통 ─────────────────────────────────────────────────────
@@ -690,8 +739,8 @@ function buildMap(original){
   return map;
 }
 
-function gradeText(raw){
-  const si=strip(raw), sf=strip(FULL);
+function gradeText(raw, scoringRaw=raw){
+  const si=strip(scoringRaw), sf=strip(FULL);
   const matches=findMatches(si,sf);
   const mA=new Set(),mB=new Set();
   matches.forEach(({sA,eA,sB,eB})=>{
@@ -708,12 +757,9 @@ function gradeText(raw){
   else if(pct>=50){grade='partial';icon='📖';title=`절반 이상 맞았어요 (${pct}%)`;sub=`${total}자 중 ${correct}자 일치`;}
   else{grade='fail';icon='✏️';title=`다시 도전해요 (${pct}%)`;sub=`${total}자 중 ${correct}자만 일치했습니다.`;}
 
-  // 최종 결과 소리/진동
-  if(pct>=80){ playCorrectSound(); vibrateCorrect(); }
-  else { playWrongSound(); vibrateWrong(); }
-
-  // 최고 기록 갱신
-  updateBestTime(pct);
+  // 최종 결과 소리
+  if(pct>=80) playCorrectSound();
+  else playWrongSound();
 
   document.getElementById('banner').className='banner '+grade;
   document.getElementById('bIcon').textContent=icon;
@@ -722,15 +768,14 @@ function gradeText(raw){
 
   // 타이머 뱃지
   const badge = document.getElementById('timeBadge');
-  const isBest = bestTime !== null && sessionTime === bestTime && pct >= 80;
-  badge.className = 'time-badge' + (isBest?' best':'');
-  badge.textContent = (isBest?'🏆 최고기록 ':'⏱ ') + formatTime(sessionTime);
+  badge.className = 'time-badge';
+  badge.textContent = '⏱ ' + formatTime(sessionTime);
 
   // diff
   const mapI=buildMap(raw);
   const rawArr=[...raw];
   const colI=new Array(raw.length).fill('none');
-  mapI.forEach((oi,si)=>{ colI[oi]=mA.has(si)?'ok':'bad'; });
+  mapI.forEach((oi,siIndex)=>{ colI[oi]=mA.has(siIndex)?'ok':'bad'; });
   let diffH='';
   for(let i=0;i<rawArr.length;i++){
     const ch=rawArr[i].replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -758,11 +803,14 @@ function gradeText(raw){
 
 function retry(){
   document.getElementById('result').classList.remove('show');
+  isListening = false;
   finalTranscript = '';
+  latestInterimTranscript = '';
   displayTranscript = '';
   scoringTranscript = '';
-  expectedIndex = 0;
-  hasWarnedForCurrentError = false;
+  currentWordIndex = 0;
+  processedWordCount = 0;
+  clearWrongState(true);
   clearTimeout(silenceTimer);
   const rec=document.getElementById('recognized');
   rec.className='recognized empty';
