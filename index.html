@@ -3,241 +3,267 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>고린도전서 13장 암송 체크</title>
+<title>고린도전서 13장 음성 암송</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;600;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
   :root{
-    --ink:#1a1714;--paper:#f7f3ec;--surface:#fffdf8;--line:#e3d8c7;
-    --gold:#d4a84b;--muted:#827666;--mic:#c0392b;
-    --ok:#2f7a4f;--ok-bg:#eef8f1;--bad:#9a392b;--bad-bg:#fff0ec;
+    --ink:#1a1714;--parchment:#f7f3ec;--warm:#e8e0d0;
+    --gold:#b8862a;--gold-light:#d4a84b;
+    --ok:#3d7a52;--ok-bg:#eef6f1;
+    --bad:#8b3a2a;--bad-bg:#fdf1ee;
+    --warn-bg:#fff8ec;--warn:#8a6010;
+    --muted:#8a7e6e;--surface:#fffdf8;
+    --mic-color:#c0392b;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    min-height:100vh;background:var(--paper);color:var(--ink);
-    font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;
-    padding:24px;
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--parchment);color:var(--ink);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
+
+  header{background:var(--ink);padding:16px 28px;}
+  .logo{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:700;color:var(--gold-light);}
+  .logo-sub{font-size:12px;color:rgba(255,255,255,0.4);margin-top:3px;}
+
+  .container{max-width:700px;margin:0 auto;padding:32px 20px 80px;display:flex;flex-direction:column;gap:20px;}
+
+  .no-support{background:var(--bad-bg);border:1px solid #e8c0b0;border-radius:10px;padding:20px 24px;font-size:14px;color:var(--bad);line-height:1.8;display:none;}
+
+  /* 타이머 */
+  .timer-bar{
+    background:var(--surface);border:1px solid var(--warm);border-radius:12px;
+    padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
+    gap:16px;
   }
-  .app{
-    width:min(680px,100%);background:var(--surface);border:1px solid var(--line);
-    border-radius:18px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:18px;
+  .timer-display{
+    font-family:'Noto Serif KR',serif;font-size:36px;font-weight:700;
+    color:var(--ink);letter-spacing:.06em;font-variant-numeric:tabular-nums;
+    min-width:100px;
   }
-  .title{text-align:center}
-  .title h1{font-family:'Noto Serif KR',serif;font-size:24px;color:var(--ink);margin-bottom:5px}
-  .title p{font-size:13px;color:var(--muted)}
+  .timer-display.running{color:var(--mic-color);}
+  .timer-display.done{color:var(--ok);}
+  .timer-label{font-size:11px;color:var(--muted);margin-top:2px;}
+  .best-time{font-size:12px;color:var(--muted);}
+  .best-time span{color:var(--gold);font-weight:700;}
+
+  /* 마이크 섹션 */
+  .mic-section{
+    background:var(--surface);border:1px solid var(--warm);border-radius:16px;
+    padding:36px 24px;display:flex;flex-direction:column;align-items:center;gap:18px;
+  }
   .mic-ring{
-    width:132px;height:132px;border:0;border-radius:50%;background:var(--ink);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    box-shadow:0 6px 24px rgba(0,0,0,.2);transition:transform .15s, background .2s;
-  }
-  .mic-ring:hover{transform:scale(1.035)}
-  .mic-ring.listening{background:var(--mic);animation:pulse 1.2s infinite}
-  .mic-icon{font-size:50px;color:var(--gold);user-select:none}
-  .mic-ring.listening .mic-icon{color:#fff}
-  @keyframes pulse{
-    0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.38)}
-    50%{box-shadow:0 0 0 24px rgba(192,57,43,0)}
-  }
-  .timer{
-    font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;
-    color:var(--ink);letter-spacing:0;
-  }
-  .status{
-    width:100%;min-height:58px;border-radius:12px;padding:15px 18px;
-    display:flex;align-items:center;justify-content:center;text-align:center;
-    font-size:18px;font-weight:800;line-height:1.5;background:var(--paper);color:var(--muted);
-  }
-  .status.on{color:var(--mic)}
-  .status.ok{background:var(--ok-bg);color:var(--ok)}
-  .status.bad{background:var(--bad-bg);color:var(--bad)}
-  .recognized{
-    width:100%;min-height:96px;border:1.5px dashed var(--line);border-radius:12px;
-    background:var(--paper);padding:18px;font-family:'Noto Serif KR',serif;
-    font-size:20px;line-height:1.8;text-align:center;color:var(--ink);
+    width:120px;height:120px;border-radius:50%;background:var(--ink);
     display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;transition:transform .15s;
+    box-shadow:0 4px 20px rgba(0,0,0,.18);
   }
-  .recognized.empty{font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#b7a894}
-  .recognized.ok{border-color:#acd8bb;background:var(--ok-bg);color:var(--ok)}
-  .recognized.bad{border-color:#e8b7aa;background:var(--bad-bg);color:var(--bad)}
-  .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-  .small-btn{
-    border:1px solid var(--line);background:transparent;color:var(--muted);
-    border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;
+  .mic-ring:hover{transform:scale(1.05);}
+  .mic-ring.listening{background:var(--mic-color);animation:pulse 1.1s infinite;}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.45);}
+    50%{box-shadow:0 0 0 24px rgba(192,57,43,0);}
   }
-  .small-btn:hover{background:var(--line);color:var(--ink)}
-  .no-support{display:none;color:var(--bad);font-size:14px;text-align:center;line-height:1.7}
-  @media(max-width:560px){
-    body{padding:14px}.app{padding:22px}.mic-ring{width:116px;height:116px}
-    .timer{font-size:30px}.status{font-size:16px}.recognized{font-size:18px}
+  .mic-icon{font-size:44px;user-select:none;}
+
+  .mic-status{font-size:14px;color:var(--muted);font-weight:500;text-align:center;min-height:22px;}
+  .mic-status.listening{color:var(--mic-color);font-weight:700;}
+  .mic-status.done{color:var(--ok);font-weight:700;}
+
+  /* 실시간 인식 텍스트 */
+  .recognized{
+    width:100%;min-height:60px;
+    background:var(--parchment);border:1.5px dashed var(--warm);border-radius:10px;
+    padding:14px 18px;
+    font-family:'Noto Serif KR',serif;font-size:17px;line-height:1.9;
+    text-align:center;word-break:keep-all;
+    transition:border-color .2s;
   }
+  .recognized.listening{border-color:var(--mic-color);}
+  .recognized.empty{color:#c0b09a;font-size:14px;font-family:'Noto Sans KR',sans-serif;}
+  /* 실시간 단어 색상 */
+  .rt-ok {color:var(--ok);}
+  .rt-bad{color:var(--mic-color);font-weight:700;}
+  .rt-interim{color:var(--muted);font-style:italic;}
+
+  /* 수동 입력 */
+  .manual-toggle{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  .manual-wrap{display:none;width:100%;flex-direction:column;gap:10px;}
+  .manual-wrap.show{display:flex;}
+  textarea{
+    width:100%;min-height:100px;padding:14px;
+    font-family:'Noto Serif KR',serif;font-size:17px;line-height:1.8;
+    border:2px solid var(--warm);border-radius:8px;
+    background:var(--parchment);color:var(--ink);resize:vertical;outline:none;transition:border-color .2s;
+  }
+  textarea:focus{border-color:var(--gold);}
+  textarea::placeholder{color:#c0b09a;font-size:14px;}
+  .btn-grade{
+    padding:11px 28px;background:var(--ink);color:var(--gold-light);
+    border:none;border-radius:8px;font-size:14px;font-weight:700;
+    font-family:'Noto Sans KR',sans-serif;cursor:pointer;align-self:flex-start;
+  }
+
+  /* 결과 */
+  .result{display:none;flex-direction:column;gap:16px;}
+  .result.show{display:flex;}
+
+  .banner{border-radius:10px;padding:16px 20px;display:flex;align-items:flex-start;gap:14px;}
+  .banner.perfect{background:var(--ok-bg);border:1px solid #aad4ba;}
+  .banner.partial {background:var(--warn-bg);border:1px solid #f0d08a;}
+  .banner.fail    {background:var(--bad-bg);border:1px solid #e8c0b0;}
+  .b-icon{font-size:26px;line-height:1;}
+  .b-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .banner.perfect .b-title{color:var(--ok);}
+  .banner.partial  .b-title{color:var(--warn);}
+  .banner.fail     .b-title{color:var(--bad);}
+  .b-sub{font-size:13px;color:var(--muted);}
+
+  /* 결과 타이머 뱃지 */
+  .time-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--warm);border-radius:99px;
+    padding:4px 14px;font-size:13px;font-weight:700;color:var(--ink);
+    margin-top:6px;
+  }
+  .time-badge.best{background:#fdebc0;color:var(--gold);}
+
+  .sec-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.07em;margin-bottom:8px;}
+  .diff-box,.ans-box{
+    font-family:'Noto Serif KR',serif;font-size:16px;line-height:2.1;
+    padding:15px 18px;border-radius:8px;
+    background:var(--parchment);border:1px solid var(--warm);
+  }
+  .ch-ok {color:var(--ok);}
+  .ch-bad{color:var(--bad);background:#fde4dc;border-radius:2px;text-decoration:line-through;}
+  .ans-hl{background:#c8ecd4;border-radius:3px;padding:1px 2px;}
+
+  .btn-retry{
+    align-self:flex-start;padding:11px 24px;
+    background:none;color:var(--muted);border:1px solid var(--warm);
+    border-radius:8px;font-size:13px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;
+  }
+  .btn-retry:hover{background:var(--warm);color:var(--ink);}
 </style>
 </head>
 <body>
-<main class="app">
-  <div class="title">
-    <h1>고린도전서 13장</h1>
-    <p>계속 암송하세요. 틀리면 소리로 알려주고 바로 다시 듣습니다.</p>
+<header>
+  <div class="logo">말씀 암송 <span style="font-weight:300;font-size:14px;color:var(--gold);margin-left:6px;">음성 버전</span></div>
+  <div class="logo-sub">고린도전서 13장 · 개역개정 · 말하면 바로 채점</div>
+</header>
+
+<div class="container">
+
+  <div class="no-support" id="noSupport">
+    ⚠️ 이 브라우저는 음성인식을 지원하지 않습니다. Chrome 또는 Edge를 사용해주세요.
   </div>
 
-  <button class="mic-ring" id="micBtn" onclick="toggleMic()" aria-label="마이크 시작">
-    <span class="mic-icon">🎙️</span>
-  </button>
-
-  <div class="timer" id="timer">00:00</div>
-  <div class="status" id="status">마이크를 누르면 시작합니다</div>
-  <div class="recognized empty" id="recognized">말씀을 말하면 여기에 짧게 표시됩니다</div>
-
-  <div class="controls">
-    <button class="small-btn" onclick="clearAttempt()">인식문장 지우기</button>
-    <button class="small-btn" onclick="resetAll()">처음부터</button>
+  <!-- 타이머 -->
+  <div class="timer-bar">
+    <div>
+      <div class="timer-display" id="timerDisplay">00:00</div>
+      <div class="timer-label">암송 시간</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="best-time" id="bestTime">최고 기록: <span>-</span></div>
+    </div>
   </div>
 
-  <div class="no-support" id="noSupport">이 브라우저는 음성인식을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 사용해주세요.</div>
-</main>
+  <!-- 마이크 -->
+  <div class="mic-section">
+    <div class="mic-ring" id="micBtn" onclick="toggleMic()">
+      <span class="mic-icon">🎙️</span>
+    </div>
+    <div class="mic-status" id="micStatus">버튼을 누르고 말씀을 암송하세요</div>
+
+    <div class="recognized empty" id="recognized">말씀을 말하면 여기에 실시간으로 표시됩니다</div>
+
+    <span class="manual-toggle" onclick="toggleManual()">✏️ 직접 입력하기</span>
+    <div class="manual-wrap" id="manualWrap">
+      <textarea id="manualInput" placeholder="기억나는 부분을 입력하세요 (띄어쓰기 무시)"></textarea>
+      <button class="btn-grade" onclick="gradeManual()">채점하기</button>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result" id="result">
+    <div class="banner" id="banner">
+      <div class="b-icon" id="bIcon"></div>
+      <div>
+        <div class="b-title" id="bTitle"></div>
+        <div class="b-sub"   id="bSub"></div>
+        <div class="time-badge" id="timeBadge">⏱ 0:00</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-label">인식된 내용 (초록=원문일치 / 빨강=원문에 없음)</div>
+      <div class="diff-box" id="diffBox"></div>
+    </div>
+    <div>
+      <div class="sec-label">✦ 원문 (개역개정) — 맞은 부분 초록 표시</div>
+      <div class="ans-box" id="ansBox"></div>
+    </div>
+
+    <button class="btn-retry" onclick="retry()">🔄 다시 암송하기</button>
+  </div>
+
+</div>
 
 <script>
 const FULL = `내가 사람의 방언과 천사의 말을 할지라도 사랑이 없으면 소리 나는 구리와 울리는 꽹과리가 되고 내가 예언하는 능력이 있어 모든 비밀과 모든 지식을 알고 또 산을 옮길 만한 모든 믿음이 있을지라도 사랑이 없으면 내가 아무 것도 아니요 내가 내게 있는 모든 것으로 구제하고 또 내 몸을 불사르게 내줄지라도 사랑이 없으면 내게 아무 유익이 없느니라 사랑은 오래 참고 사랑은 온유하며 시기하지 아니하며 사랑은 자랑하지 아니하며 교만하지 아니하며 무례히 행하지 아니하며 자기의 유익을 구하지 아니하며 성내지 아니하며 악한 것을 생각하지 아니하며 불의를 기뻐하지 아니하며 진리와 함께 기뻐하고 모든 것을 참으며 모든 것을 믿으며 모든 것을 바라며 모든 것을 견디느니라 사랑은 언제까지나 떨어지지 아니하되 예언도 폐하고 방언도 그치고 지식도 폐하리라 우리는 부분적으로 알고 부분적으로 예언하니 온전한 것이 올 때에는 부분적으로 하던 것이 폐하리라 내가 어렸을 때에는 말하는 것이 어린 아이와 같고 깨닫는 것이 어린 아이와 같고 생각하는 것이 어린 아이와 같다가 장성한 사람이 되어서는 어린 아이의 일을 버렸노라 우리가 지금은 거울로 보는 것 같이 희미하나 그 때에는 얼굴과 얼굴을 대하여 볼 것이요 지금은 내가 부분적으로 아나 그 때에는 주께서 나를 아신 것 같이 내가 온전히 알리라 그런즉 믿음, 소망, 사랑, 이 세 가지는 항상 있을 것인데 그 중의 제일은 사랑이라`;
-const $ = id => document.getElementById(id);
-const FULL_WORDS = splitKoreanWords(FULL);
-const FULL_WORD_NORMS = new Set(FULL_WORDS.map(normalizeKoreanText));
-const FULL_NORM = normalizeKoreanText(FULL);
-const FULL_SEGMENTS = buildTargetSegments(FULL_WORDS);
-const CORRECTION_GROUPS = {
-  '울리는': ['우리는','우리는요','우리 는','우리는데','우리는가','우리는 게','울리는','울리는요','울리 는','울리는데','울리네','울리는가','울리는 게','울리는게','울이는','울이는요','우리를은','울린','울린는','우릴는','울리며','울리기','울림은','울리는이','올리는','올리 는','울린은','울리 는데','울리는 데','울리게','울리느','울리니','울리은','울리는은','울리는를','울리는와','우리는은','우리는를','우리는와','우린는','우리는 데','우리는데요'],
-  '꽹과리': ['꽹과리','꽹과리가','꽹과리를','꽹가리','꽹가리가','꽹가리를','꽹관리','꽹관리가','꽹관리를','괭과리','괭과리가','괭과리를','괭가리','괭가리가','깽과리','깽과리가','깽과리를','깽가리','깽가리가','팽과리','팽가리','꽹거리','꽹거리가','꽹거리를','깽거리','깽거리가','깽거리를','꽹과린','꽹가린','꽹 과리','꽹 과 리','깽 과리','깽 과 리','꽹 가리','깽 가리','꽹괄이','깽괄이','꽹고리','깽고리','꽹과리와','꽹거리와','깽거리와','괭거리','꽹가 리','깽가 리','꽹가리 되고','깽가리 되고','꽹과리 되고','꽹관리 되고','깽거리 되고','꽹괄이가','깽괄이가','꽹고리가','깽고리가','꽹고리를','깽고리를','꽹관 리','깽관리','깽관리가','깽관리를','꽹가래','깽가래','꽹가래가','깽가래가','꽹과리가되고','꽹관리가되고','깽가리가되고'],
-  '무례히': ['무례히','무례이','무례 히','무례 이','무래히','무래이','무레이','무레히','무레희','물에이','물에 희','물에희','물에히','물레히','무료히','무리히','무례히이','물애이','물애 희','물애희','물애히','무례희','무례의','무래희','무래의','무레의','무레 이','무래 이','무 레 히','무 래 히','무 레이','무 래이','무레 이','무래 이','물 에이','물 에 히','물 에 희','물레 희','물레 이','몰에이','몰에히','몰에 희','문에이','문에히','문에 희','무례잉','무레이이','물에이이'],
-  '행하지': ['행하지','행 하지','향하지','형하지','해앟지','해아지','행아지','행하 지','행하지요'],
-  '되고': ['되고','대구','대고','되고요','된고','대구요'],
-  '내게': ['내게','네게','4개','내 개','네 개','내게에','내게 있는','네게 있는','4개 있는'],
-  '온전한': ['온전한','운전한','온전한 것이','운전한 것이','온 전한','운 전한','온전 한'],
-  '예언도': ['예언도','예영도','예현도','예연도','예원도','예언 도','예영 도','예현 도','예연 도'],
-  '폐하고': ['폐하고','패하고','폐 하고','패 하고','폐하 고','패하 고'],
-  '방언도': ['방언도','강원도','방 온도','방언 도','강원 도','방온도','방원도','방연도'],
-  '아니하되': ['아니하되','아니 하되','아니하대','아니 하대','아니하돼','아니 하돼','아니하데','아니 하데','아니하제','아니하디','아니하네','아니한대','아니한되','안이하되','안이 하되','안이하대','안이한대','안이하네','아니하되요','아니 하되요','아니하더','아니 하더','아니하되 사랑','아니 하되 사랑','아니하대 사랑','아니하돼 사랑','아니하되 예언','아니 하되 예언','아니하대 예언','아니하돼 예언','아니아되','아니아대','아니아돼','아니아데','안이하돼','안이하데','아니 한대','아니 한되','아니 한데','아니하뒈','아니 하뒈','아니하되에','아니하대에','아니하되요'],
-  '떨어지지': ['떨어지지','떨어 지지','떠러지지','떠러 지지','떨어지질','떨어지지요','떨어지지는','떨어지지가','떨어지지니','떨어지지 않고','떨어지지 아니하되','떨어지지 아니 하되','떨어지지 아니하대','떨어지지 아니하돼','떨 어지지','떨 어 지지','떠러지질','떠러지지요','떠러지지는','떨어질지','떨어 지질','떨어지지는요','떨어지지가요'],
-  '소리나는': ['소리나는','소리 나는','소리가 나는','소리나 는','소리난','소리나는이','소리 나는이','소리 나네','소리나네','소리 나는 구리','소리나는 구리','소리가 나는 구리','소리난 구리'],
-  '구리': ['구리','굴이','구리가','구리와','구리로','구리 의','쿠리','꾸리','구리와 울리는','구리 울리는','굴이 울리는'],
-  '교만하지': ['교만하지','교만 하지','교만치','교만치 아니하며','교만하지 아니하며','교만하지않으며','교만하지 안으며','교만하지 아니 하며','교만하지 아니하고','교만하지 않으며','교만하지 아니 하며'],
-  '유익': ['유익','유익이','유익은','유익을','유익이 없느니라','유익이 없으니라','유익이 없느라','유익이 업느니라','유익이 없는이라','유익이 없느니라 사랑은','유익이 없으니라 사랑은'],
-  '불사르게': ['불사르게','불 사르게','불사르며','불 사르며','불사르게 내줄지라도','불사르며 내줄지라도','불살르게','불살르며','불사르게 내 줄지라도','불사르개','불사르게 내 줄 지라도','불사르며 내 줄 지라도'],
-  '내줄지라도': ['내줄지라도','내 줄지라도','내줄 지라도','내줄지 라도','내 줄 지라도','내줄지라도요','내줄지라도 사랑이','내줄지라 도','내 줄 지라 도','내줄 지라 도'],
-  '폐하리라': ['폐하리라','폐 하리라','폐하리라요','패하리라','폐하리 라','폐하리','폐하리라 우리는','폐하리라 우리가','폐 하리라 우리는','폐하이다','최하이라','대하이라','최하리다','폐아리라','폐아이라','폐이다','폐할이라','패하이다','최하리라','대하리라','폐 하이다','폐 아리라','폐 아이라','폐 할이라'],
-  '그치고': ['그치고','그 치고','그치며','그치고 지식도','그치고요','그치 고','그치고 지식','그 치고 지식도','고치고','고 치고'],
-  '희미하나': ['희미하나','희미 하나','희미하나 그때에는','흐미하나','희미한','희미하게','흐릿하나','희미하되','희미하나 그 때에는','희미하나 그때는','힘이 하나','힘이 안나','잠이 안와','힘이하나','힘이안나','잠이안와'],
-  '대하여': ['대하여','대 하여','대하고','대하여 볼 것이요','대하여 볼거이요','대하여 볼거요','대하여 볼 것이며','대하여 볼 것이오','대하여 볼거요'],
-  '그때에는': ['그때에는','그 때에는','그때는','그 때는','그때엔','그 때엔'],
-  '온전히': ['온전히','온 전히','온전이','완전히','온전히 알리라','온전히 알이라','온전히 알리요','온전히 알리라 그런즉','온전히 알리라 그런 즉'],
-  '항상': ['항상','항 상','항시','항상 있을 것인데','항상 있을건데','항상 있을 것인대','항상 있을 것 인데','항상 있을 건데'],
-  '중의': ['중의','중에','중 의','중 에'],
-  '제일은': ['제일은','제 일은','제일','제일은 사랑이라','제일은 사랑이다','제일은 사랑이야','제 일은 사랑이라','제일은 사랑 이라']
-};
-const CORRECTION_TARGETS = {
-  '소리나는': '소리 나는'
-};
-const PHRASE_CORRECTION_MAP = {
+
+const LIMITED_PHRASE_CORRECTIONS = {
   '우리는깽 가리가 되고': '울리는 꽹과리가 되고',
+  '우리는 깽가리가 되고': '울리는 꽹과리가 되고',
   '우리는 깽다리가 되고': '울리는 꽹과리가 되고',
-  '우리는깽 다리가 되고': '울리는 꽹과리가 되고',
   '우리는 꽹가리가 되고': '울리는 꽹과리가 되고',
   '우리는 꽹관리가 되고': '울리는 꽹과리가 되고',
-  '우리는 깽가리가 되고': '울리는 꽹과리가 되고',
-  '우리는 꽹가리 되고': '울리는 꽹과리가 되고',
-  '우리는 꽹관리 되고': '울리는 꽹과리가 되고',
-  '우리는 깽가리 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
   '울리는 깽가리가 되고': '울리는 꽹과리가 되고',
+  '울리는 깽다리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹가리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹관리가 되고': '울리는 꽹과리가 되고',
-  '울리는 깽가리 되고': '울리는 꽹과리가 되고',
-  '울리는 꽹거리 되고': '울리는 꽹과리가 되고',
-  '울리는 깽거리 되고': '울리는 꽹과리가 되고',
-  '깽과이가 되고': '꽹과리가 되고',
-  '꽹관리가 되고': '꽹과리가 되고',
+  '울리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
+  '깽가리가 되고': '꽹과리가 되고',
   '깽다리가 되고': '꽹과리가 되고',
-  '깽 가리가 대구': '꽹과리가 되고',
-  '꽹가리가 대구': '꽹과리가 되고',
-  '꽹관리가 대구': '꽹과리가 되고',
-  '소리가 나는 구리': '소리 나는 구리와',
-  '소리나는 구리': '소리 나는 구리와',
-  '소리 나는 구리': '소리 나는 구리와',
-  '구리 울리는': '구리와 울리는',
-  '굴이 울리는': '구리와 울리는',
-  '무례이 행하지': '무례히 행하지',
-  '무례이 행하지 아니하며': '무례히 행하지 아니하며',
+  '꽹가리가 되고': '꽹과리가 되고',
+  '꽹관리가 되고': '꽹과리가 되고',
+  '깽과이가 되고': '꽹과리가 되고',
   '물에 이행하지 아니하며': '무례히 행하지 아니하며',
-  '우리 이행하지 아니하며': '무례히 행하지 아니하며',
   '물에 행하지 아니하며': '무례히 행하지 아니하며',
+  '우리 이행하지 아니하며': '무례히 행하지 아니하며',
   '물에힘 행하지 아니하며': '무례히 행하지 아니하며',
   '물의힘 행하지 아니하며': '무례히 행하지 아니하며',
   '무례희 행하지 아니하며': '무례히 행하지 아니하며',
   '물레희 행하지 아니하며': '무례히 행하지 아니하며',
   '무대희 행하지 아니하며': '무례히 행하지 아니하며',
   '물례희 행하지 아니하며': '무례히 행하지 아니하며',
+  '물레이 행하지 아니하며': '무례히 행하지 아니하며',
   '브레인 행하지 아니하며': '무례히 행하지 아니하며',
   '구래힘 행하지 아니하며': '무례히 행하지 아니하며',
   '울애기 행하지 아니하며': '무례히 행하지 아니하며',
   '울레희 행하지 아니하며': '무례히 행하지 아니하며',
   '물랭이 행하지 아니하며': '무례히 행하지 아니하며',
-  '물레이 행하지 아니하며': '무례히 행하지 아니하며',
-  '물에이 행하지 아니하며': '무례히 행하지 아니하며',
-  '물에 희 행하지 아니하며': '무례히 행하지 아니하며',
+  '무례이 행하지 아니하며': '무례히 행하지 아니하며',
+  '무레히 행하지 아니하며': '무례히 행하지 아니하며',
+  '무래히 행하지 아니하며': '무례히 행하지 아니하며',
   '물에히 행하지 아니하며': '무례히 행하지 아니하며',
   '물에희 행하지 아니하며': '무례히 행하지 아니하며',
-  '물애이 행하지 아니하며': '무례히 행하지 아니하며',
-  '물애 희 행하지 아니하며': '무례히 행하지 아니하며',
-  '물애히 행하지 아니하며': '무례히 행하지 아니하며',
-  '물레히 행하지 아니하며': '무례히 행하지 아니하며',
-  '물레 희 행하지 아니하며': '무례히 행하지 아니하며',
-  '몰에이 행하지 아니하며': '무례히 행하지 아니하며',
-  '몰에 희 행하지 아니하며': '무례히 행하지 아니하며',
-  '문에이 행하지 아니하며': '무례히 행하지 아니하며',
-  '문에 희 행하지 아니하며': '무례히 행하지 아니하며',
-  '무레이 행하지 아니하며': '무례히 행하지 아니하며',
-  '무래이 행하지 아니하며': '무례히 행하지 아니하며',
-  '무래히 행하지 아니하며': '무례히 행하지 아니하며',
-  '무레희 행하지 아니하며': '무례히 행하지 아니하며',
-  '무료히 행하지 아니하며': '무례히 행하지 아니하며',
-  '무리히 행하지 아니하며': '무례히 행하지 아니하며',
-  '무레히 행하지 아니하며': '무례히 행하지 아니하며',
-  '무례 히 행하지': '무례히 행하지',
-  '내가 4개 있는 모든 것으로': '내가 내게 있는 모든 것으로',
-  '내가 네게 있는 모든 것으로': '내가 내게 있는 모든 것으로',
-  '운전한 것이 올때에는': '온전한 것이 올 때에는',
-  '운전한 것이 올 때에는': '온전한 것이 올 때에는',
-  '아니 하되': '아니하되',
-  '아니 하대': '아니하되',
-  '아니 하돼': '아니하되',
-  '아니하대 사랑': '아니하되 사랑',
-  '아니하돼 사랑': '아니하되 사랑',
-  '아니하대 예언': '아니하되 예언',
-  '아니하돼 예언': '아니하되 예언',
-  '떨어지지 아니 하되': '떨어지지 아니하되',
   '떨어지지 아니하대': '떨어지지 아니하되',
   '떨어지지 아니하돼': '떨어지지 아니하되',
   '떨어지지 아니하데': '떨어지지 아니하되',
   '떨어지지 아니 하대': '떨어지지 아니하되',
   '떨어지지 아니 하돼': '떨어지지 아니하되',
-  '떠러지지 아니하대': '떨어지지 아니하되',
-  '떠러지지 아니하돼': '떨어지지 아니하되',
-  '떠러지지 아니하데': '떨어지지 아니하되',
-  '떠러 지지 아니하대': '떨어지지 아니하되',
-  '떨어 지지 아니하대': '떨어지지 아니하되',
-  '부분적으로 하던 것이 폐하이다': '부분적으로 하던 것이 폐하리라',
-  '부분적으로 하던 것이 최하이라': '부분적으로 하던 것이 폐하리라',
-  '부분적으로 하던 것이 대하이라': '부분적으로 하던 것이 폐하리라',
-  '부분적으로 하던 것이 최하리다': '부분적으로 하던 것이 폐하리라',
-  '내가 어렸을 때는': '내가 어렸을 때에는',
-  '거울로 보는 것 같이 힘이 하나': '거울로 보는 것 같이 희미하나',
-  '거울로 보는 것 같이 힘이 안나': '거울로 보는 것 같이 희미하나',
-  '거울로 보는 것 같이 잠이 안와': '거울로 보는 것 같이 희미하나',
-  '그때는': '그때에는',
-  '그 때는': '그 때에는',
-  '그 중에': '그 중의',
-  '지식도 아니라': '지식도 폐하리라',
-  '지식도 폐아리라': '지식도 폐하리라',
-  '지식도 폐아이라': '지식도 폐하리라',
-  '지식도 폐이다': '지식도 폐하리라',
-  '주식도 폐할이라': '지식도 폐하리라',
+  '운전한 것이 올때에는': '온전한 것이 올 때에는',
+  '운전한 것이 올 때에는': '온전한 것이 올 때에는',
+  '폐하이다': '폐하리라',
+  '최하이라': '폐하리라',
+  '대하이라': '폐하리라',
+  '최하리다': '폐하리라',
+  '폐아리라': '폐하리라',
+  '폐아이라': '폐하리라',
+  '폐이다': '폐하리라',
+  '폐할이라': '폐하리라',
   '강원도 고치고': '방언도 그치고',
   '방 온도 고치고': '방언도 그치고',
+  '방언도 고치고': '방언도 그치고',
   '예영도 폐하고': '예언도 폐하고',
   '예현도 폐하고': '예언도 폐하고',
   '예연도 폐하고': '예언도 폐하고',
@@ -245,696 +271,430 @@ const PHRASE_CORRECTION_MAP = {
   '예영도 패하고': '예언도 폐하고',
   '예현도 패하고': '예언도 폐하고',
   '예연도 패하고': '예언도 폐하고',
-  '교만치 아니하며': '교만하지 아니하며',
-  '교만하지않으며': '교만하지 아니하며',
-  '교만하지 안으며': '교만하지 아니하며',
-  '교만하지 않으며': '교만하지 아니하며',
-  '교만하지 아니 하고': '교만하지 아니하며',
-  '유익이 없으니라': '유익이 없느니라',
-  '유익이 없느라': '유익이 없느니라',
-  '유익이 업느니라': '유익이 없느니라',
-  '유익이 없는이라': '유익이 없느니라',
-  '유익이 없으니라 사랑은': '유익이 없느니라 사랑은',
-  '불사르며 내줄지라도': '불사르게 내줄지라도',
-  '불사르게 내 줄지라도': '불사르게 내줄지라도',
-  '불사르며 내 줄지라도': '불사르게 내줄지라도',
-  '불사르게 내 줄 지라도': '불사르게 내줄지라도',
-  '내 줄지라도': '내줄지라도',
-  '내줄 지라도': '내줄지라도',
-  '내 줄 지라도': '내줄지라도',
-  '폐하리라 우리가': '폐하리라 우리는',
-  '폐 하리라 우리는': '폐하리라 우리는',
-  '그치고 지식': '그치고 지식도',
-  '그 치고 지식도': '그치고 지식도',
-  '희미하나 그때에는': '희미하나 그 때에는',
-  '희미하나 그 때에는': '희미하나 그 때에는',
-  '희미하나 그때는': '희미하나 그 때에는',
-  '대하여 볼거이요': '대하여 볼 것이요',
-  '대하여 볼거요': '대하여 볼 것이요',
-  '대하여 볼 것이오': '대하여 볼 것이요',
-  '온전히 알이라': '온전히 알리라',
-  '온전히 알리요': '온전히 알리라',
-  '온전히 알리라 그런 즉': '온전히 알리라 그런즉',
-  '항상 있을건데': '항상 있을 것인데',
-  '항상 있을 것인대': '항상 있을 것인데',
-  '항상 있을 것 인데': '항상 있을 것인데',
-  '항상 있을 건데': '항상 있을 것인데',
-  '제 일은 사랑이라': '제일은 사랑이라',
-  '제일은 사랑이다': '제일은 사랑이라',
-  '제일은 사랑이야': '제일은 사랑이라',
-  '제일은 사랑 이라': '제일은 사랑이라'
+  '거울로 보는 것 같이 힘이 하나': '거울로 보는 것 같이 희미하나',
+  '거울로 보는 것 같이 힘이 안나': '거울로 보는 것 같이 희미하나',
+  '거울로 보는 것 같이 힘이 안 나': '거울로 보는 것 같이 희미하나',
+  '거울로 보는 것 같이 잠이 안와': '거울로 보는 것 같이 희미하나',
+  '내가 4개 있는 모든 것으로': '내가 내게 있는 모든 것으로',
+  '내가 네게 있는 모든 것으로': '내가 내게 있는 모든 것으로',
+  '내가 어렸을 때는': '내가 어렸을 때에는',
+  '그때는': '그 때에는',
+  '그 중에': '그 중의'
 };
-const correctionMap = buildCorrectionMap(CORRECTION_GROUPS);
-const CORRECTION_PHRASES = buildCorrectionPhrases(CORRECTION_GROUPS);
-const CRITICAL_CONTEXTS = [
-  buildAnswerContext('소리 나는 구리와 울리는 꽹과리가 되고'),
-  buildAnswerContext('무례히 행하지 아니하며'),
-  buildAnswerContext('사랑은 언제까지나 떨어지지 아니하되')
-].filter(Boolean);
-// "무례히"와 뜻이 달라지는 표현은 유사도가 높아도 정답으로 보정하지 않는다.
-const STRICT_WRONG_PATTERNS = [
-  '무례하게행하지',
-  '무례해행하지',
-  '무례한행하지',
-  '무례행하지',
-  '무리하게행하지',
-  '무래하게행하지',
-  '떨어지지아니하며',
-  '떨어지지아니하고',
-  '떨어지지아니하여도',
-  '떠러지지아니하며',
-  '떠러지지아니하고'
-];
 
-let recognition = null;
-let micOn = false;
-let shouldRestart = false;
-let resettingSpeech = false;
-let finalText = '';
-let lastInterimText = '';
-let lastSpeechText = '';
-let lastChecked = '';
-let timerId = null;
-let startedAt = null;
+const LIMITED_WORD_CORRECTIONS = {
+  '우리는깽': '울리는 꽹',
+  '우리는깽가리': '울리는 꽹과리',
+  '깽가리': '꽹과리',
+  '깽다리': '꽹과리',
+  '꽹가리': '꽹과리',
+  '꽹관리': '꽹과리',
+  '깽과이': '꽹과리',
+  '물에힘': '무례히',
+  '물의힘': '무례히',
+  '무례희': '무례히',
+  '물레희': '무례히',
+  '무대희': '무례히',
+  '물례희': '무례히',
+  '물레이': '무례히',
+  '브레인': '무례히',
+  '구래힘': '무례히',
+  '울애기': '무례히',
+  '울레희': '무례히',
+  '물랭이': '무례히',
+  '무례이': '무례히',
+  '무레히': '무례히',
+  '무래히': '무례히',
+  '물에히': '무례히',
+  '물에희': '무례히'
+};
+
+// ── 경고음 (Web Audio API) ───────────────────────────────────────
 let audioCtx = null;
-let wrongTimer = null;
-let speechStopTimer = null;
-let clearMessageTimer = null;
-let liveNorm = '';
-let lastSpeechTime = 0;
-const SPEECH_STOP_DELAY_MS = 1800;
-
-function normalizeKoreanText(text){
-  return text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]/g,'').toLowerCase();
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function playWrongSound(){
+  try{
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime+0.18);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.22);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime+0.22);
+  } catch(e){}
+}
+function playCorrectSound(){
+  try{
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(660, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime+0.15);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime+0.2);
+  } catch(e){}
 }
 
-function normalize(text){
-  return normalizeKoreanText(text);
-}
-
-function splitKoreanWords(text){
-  return text
-    .replace(/[^\uAC00-\uD7A3a-zA-Z0-9]+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-function buildCorrectionMap(groups){
-  return Object.entries(groups).reduce((map, [target, variants]) => {
-    const correctedTarget = CORRECTION_TARGETS[target] || target;
-    variants.forEach(variant => {
-      map[normalizeKoreanText(variant)] = correctedTarget;
-    });
-    return map;
-  }, {});
-}
-
-function buildCorrectionPhrases(groups){
-  const contextWords = new Set([
-    '되고','행하지','사랑','사랑은','예언','예언도','않고','아니하되','아니하대','아니하돼',
-    '없느니라','없으니라','없느라','업느니라','없는이라','내줄지라도','우리는','우리가',
-    '지식','지식도','그때에는','그때는','볼','것이요','볼거이요','볼거요','것이며','것이오',
-    '알리라','알이라','알리요','그런즉','그런','즉','있을','것인데','있을건데','것인대',
-    '것','인데','건데','사랑이라','사랑이다','사랑이야','이라'
-  ]);
-  const phrases = [];
-  Object.entries(groups).forEach(([target, variants]) => {
-    const correctedTarget = CORRECTION_TARGETS[target] || target;
-    variants.forEach(variant => {
-      const words = splitKoreanWords(variant);
-      const looksLikeContext = words.some(word => contextWords.has(normalizeKoreanText(word)));
-      const closeToTarget = normalizeKoreanText(variant).length <= normalizeKoreanText(correctedTarget).length + 2;
-      if(words.length > 1 && closeToTarget && !looksLikeContext){
-        phrases.push({ variant, target: correctedTarget });
-      }
-    });
-  });
-  return phrases.sort((a, b) => normalizeKoreanText(b.variant).length - normalizeKoreanText(a.variant).length);
-}
-
-function buildAnswerContext(phrase){
-  const phraseNorm = normalizeKoreanText(phrase);
-  const phraseWords = splitKoreanWords(phrase);
-  const start = FULL_WORDS.findIndex((_, index) => {
-    return normalizeKoreanText(FULL_WORDS.slice(index, index + phraseWords.length).join(' ')) === phraseNorm;
-  });
-  if(start < 0) return null;
-  return {
-    phrase,
-    start,
-    words: FULL_WORDS.slice(start, start + phraseWords.length)
-  };
-}
-
-function buildTargetSegments(words){
-  const segments = [];
-  for(let length = 1; length <= words.length; length++){
-    for(let start = 0; start <= words.length - length; start++){
-      const text = words.slice(start, start + length).join(' ');
-      segments.push({
-        start,
-        text,
-        words: words.slice(start, start + length),
-        norm: normalizeKoreanText(text)
-      });
-    }
-  }
-  segments.push({ start: 0, text: FULL, words, norm: normalizeKoreanText(FULL) });
-  return segments;
+function normalizeSpeechSpaces(text){
+  return text.replace(/[\n\r\t]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function escapeRegExp(text){
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function applyPhraseCorrections(text){
-  let corrected = text.replace(/[^\uAC00-\uD7A3a-zA-Z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+function splitSpeechWords(text){
+  return normalizeSpeechSpaces(text).split(/\s+/).filter(Boolean);
+}
 
-  Object.entries(PHRASE_CORRECTION_MAP)
-    .sort((a, b) => normalizeKoreanText(b[0]).length - normalizeKoreanText(a[0]).length)
+function applyLimitedCorrections(text){
+  let corrected = normalizeSpeechSpaces(text);
+
+  Object.entries(LIMITED_PHRASE_CORRECTIONS)
+    .sort((a, b) => strip(b[0]).length - strip(a[0]).length)
     .forEach(([variant, target]) => {
-      const words = splitKoreanWords(variant);
-      const pattern = words.length > 1
-        ? words.map(escapeRegExp).join('\\s*')
-        : escapeRegExp(variant);
+      const pattern = splitSpeechWords(variant).map(escapeRegExp).join('\\s*');
       corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
     });
 
-  return corrected;
-}
-
-function applyCorrectionMap(text){
-  let corrected = applyPhraseCorrections(text);
-
-  CORRECTION_PHRASES.forEach(({ variant, target }) => {
-    const pattern = splitKoreanWords(variant).map(escapeRegExp).join('\\s+');
-    corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
-  });
-
-  return splitKoreanWords(corrected).map(word => {
-    const normalizedWord = normalizeKoreanText(word);
-    if(FULL_WORD_NORMS.has(normalizedWord)) return word;
-    return correctionMap[normalizedWord] || word;
+  corrected = splitSpeechWords(corrected).map(word => {
+    return LIMITED_WORD_CORRECTIONS[strip(word)] || word;
   }).join(' ');
+
+  corrected = corrected.replace(/((?:울리는\s+)?(?:꽹과리|깽가리|깽다리|꽹가리|꽹관리|깽과이)가?)\s+대구\b/gi, '$1 되고');
+  return normalizeSpeechSpaces(corrected);
 }
 
-function normalizeForComparison(text){
-  return normalizeKoreanText(applyCorrectionMap(applyPhraseCorrections(text)));
+// ── 진동 ─────────────────────────────────────────────────────────
+function vibrateWrong(){
+  if(navigator.vibrate) navigator.vibrate([80, 40, 80]);
+}
+function vibrateCorrect(){
+  if(navigator.vibrate) navigator.vibrate([30]);
 }
 
-function calculateSimilarity(a, b){
-  const left = normalizeKoreanText(a);
-  const right = normalizeKoreanText(b);
-  if(left === right) return 1;
-  if(!left || !right) return 0;
+// ── 타이머 ───────────────────────────────────────────────────────
+let timerInterval = null;
+let timerSeconds = 0;
+let sessionTime = 0; // 이번 세션 경과 시간
+let bestTime = null;  // 최고 기록 (초)
 
-  const distances = Array.from({ length: left.length + 1 }, (_, i) => [i]);
-  for(let j = 1; j <= right.length; j++) distances[0][j] = j;
-
-  for(let i = 1; i <= left.length; i++){
-    for(let j = 1; j <= right.length; j++){
-      const cost = left[i - 1] === right[j - 1] ? 0 : 1;
-      distances[i][j] = Math.min(
-        distances[i - 1][j] + 1,
-        distances[i][j - 1] + 1,
-        distances[i - 1][j - 1] + cost
-      );
-    }
+function timerStart(){
+  timerSeconds = 0;
+  clearInterval(timerInterval);
+  document.getElementById('timerDisplay').className = 'timer-display running';
+  timerInterval = setInterval(()=>{
+    timerSeconds++;
+    document.getElementById('timerDisplay').textContent = formatTime(timerSeconds);
+  }, 1000);
+}
+function timerStop(){
+  clearInterval(timerInterval);
+  sessionTime = timerSeconds;
+  document.getElementById('timerDisplay').className = 'timer-display done';
+}
+function formatTime(s){
+  const m = Math.floor(s/60).toString().padStart(2,'0');
+  const sec = (s%60).toString().padStart(2,'0');
+  return `${m}:${sec}`;
+}
+function updateBestTime(pct){
+  // 80% 이상일 때만 최고 기록 등록
+  if(pct < 80) return;
+  if(bestTime === null || sessionTime < bestTime){
+    bestTime = sessionTime;
+    const el = document.getElementById('bestTime');
+    el.innerHTML = `최고 기록: <span>${formatTime(bestTime)}</span> 🏆`;
   }
-
-  const maxLength = Math.max(left.length, right.length);
-  return (maxLength - distances[left.length][right.length]) / maxLength;
 }
 
-function calculateStringSimilarity(a, b){
-  return calculateSimilarity(normalizeForComparison(a), normalizeForComparison(b));
-}
-
-function getSegmentThreshold(normLength){
-  if(normLength <= 8) return .68;
-  if(normLength <= 18) return .70;
-  return .75;
-}
-
-function getBestMatchingVerseOrSegment(transcript, targetSegments=FULL_SEGMENTS){
-  const transcriptNorm = normalizeForComparison(transcript);
-  if(!transcriptNorm) return { score: 0, text: '', norm: '', words: [] };
-  if(FULL_NORM.includes(transcriptNorm)){
-    return { score: 1, text: transcript, norm: transcriptNorm, words: splitKoreanWords(transcript) };
-  }
-
-  let best = { score: 0, text: transcript, norm: transcriptNorm, words: splitKoreanWords(transcript) };
-  const minLength = Math.max(1, transcriptNorm.length - Math.ceil(transcriptNorm.length * .45));
-  const maxLength = transcriptNorm.length + Math.ceil(transcriptNorm.length * .45);
-
-  targetSegments.forEach(segment => {
-    if(segment.norm.length < minLength || segment.norm.length > maxLength) return;
-    const score = calculateSimilarity(transcriptNorm, segment.norm);
-    if(score > best.score){
-      best = { ...segment, score };
-    }
-  });
-
-  return best;
-}
-
-function getTokenMatchScore(spoken, expected){
-  const spokenNorm = normalizeKoreanText(spoken);
-  const expectedNorm = normalizeKoreanText(expected);
-  const corrected = correctionMap[spokenNorm];
-
-  if(spokenNorm === expectedNorm) return 1;
-  if(corrected){
-    const correctedNorm = normalizeKoreanText(corrected);
-    if(expectedNorm === correctedNorm || expectedNorm.startsWith(correctedNorm) || correctedNorm.startsWith(expectedNorm)){
-      return .98;
-    }
-  }
-
-  if(spokenNorm.length <= 2 || expectedNorm.length <= 2) return 0;
-  const similarity = calculateSimilarity(spokenNorm, expectedNorm);
-  const threshold = Math.max(.75, .82 - Math.min(spokenNorm.length, expectedNorm.length) * .01);
-  return similarity >= threshold ? similarity : 0;
-}
-
-function scoreWordsAgainstAnswer(spokenWords, expectedWords){
-  const maxLength = Math.max(spokenWords.length, expectedWords.length);
-  let total = 0;
-
-  for(let i = 0; i < maxLength; i++){
-    const spoken = spokenWords[i];
-    const expected = expectedWords[i];
-    if(!spoken || !expected){
-      total -= .35;
-      continue;
-    }
-    total += getTokenMatchScore(spoken, expected);
-  }
-
-  return total / maxLength;
-}
-
-function scoreVerseWindow(spokenWords, start, length){
-  return scoreWordsAgainstAnswer(spokenWords, FULL_WORDS.slice(start, start + length));
-}
-
-function findBestVerseWindow(spokenWords){
-  let best = { score: 0, words: spokenWords };
-  const minLength = Math.max(1, spokenWords.length - 2);
-  const maxLength = Math.min(FULL_WORDS.length, spokenWords.length + 2);
-
-  CRITICAL_CONTEXTS.forEach(context => {
-    const score = scoreWordsAgainstAnswer(spokenWords, context.words);
-    if(score > best.score){
-      best = { score: score + .03, words: context.words };
-    }
-  });
-
-  for(let length = minLength; length <= maxLength; length++){
-    for(let start = 0; start <= FULL_WORDS.length - length; start++){
-      const score = scoreVerseWindow(spokenWords, start, length);
-      if(score > best.score){
-        best = { score, words: FULL_WORDS.slice(start, start + length) };
-      }
-    }
-  }
-
-  return best;
-}
-
-function normalizeTranscriptByVerse(raw){
-  const phraseCorrectedText = applyPhraseCorrections(raw);
-  const mappedText = applyCorrectionMap(phraseCorrectedText);
-  const spokenWords = splitKoreanWords(mappedText);
-  const hasStrictWrongExpression = STRICT_WRONG_PATTERNS.some(pattern => normalizeKoreanText(raw).includes(pattern));
-  if(!spokenWords.length){
-    return { text: '', norm: '', score: 0, stringScore: 0, hasStrictWrongExpression };
-  }
-  if(hasStrictWrongExpression){
-    return {
-      text: mappedText,
-      norm: normalizeForComparison(mappedText),
-      score: 0,
-      stringScore: 0,
-      stringMatchText: mappedText,
-      hasStrictWrongExpression
-    };
-  }
-
-  const best = findBestVerseWindow(spokenWords);
-  const bestString = getBestMatchingVerseOrSegment(mappedText);
-  const stringThreshold = getSegmentThreshold(bestString.norm.length);
-  const useStringMatch = bestString.score >= stringThreshold;
-  const normalizedWords = !useStringMatch && best.score >= .72 ? best.words : spokenWords;
-  const normalizedText = normalizedWords.join(' ');
-  const displayText = useStringMatch ? bestString.text : normalizedText;
-
-  return {
-    text: displayText,
-    norm: normalizeForComparison(displayText),
-    score: best.score,
-    stringScore: bestString.score,
-    stringMatchText: bestString.text,
-    hasStrictWrongExpression
-  };
-}
-
-function compareWithAnswer(normalizedTranscript){
-  if(normalizedTranscript.hasStrictWrongExpression) return false;
-  if(!normalizedTranscript.norm) return false;
-  if(FULL_NORM.includes(normalizedTranscript.norm)) return true;
-  if(normalizedTranscript.stringScore >= getSegmentThreshold(normalizedTranscript.norm.length)) return true;
-  if(normalizedTranscript.score >= .82) return true;
-
-  return CRITICAL_CONTEXTS.some(context => {
-    const contextNorm = normalizeKoreanText(context.words.join(' '));
-    return calculateSimilarity(normalizedTranscript.norm, contextNorm) >= .86;
-  });
-}
-
-function isPotentialPrefixOfAnswer(norm){
-  if(!norm) return true;
-  return FULL_SEGMENTS.some(segment => segment.norm.startsWith(norm));
-}
-
-// 브라우저 콘솔에서 runNormalizationExamples()를 호출해 보정 예시를 빠르게 확인할 수 있다.
-// 통과: "물에 희 행하지 아니하며" -> "무례히 행하지 아니하며"
-// 통과: "우리는깽 가리가 되고" -> "울리는 꽹과리가 되고"
-// 통과: "내가 4개 있는 모든 것으로" -> "내가 내게 있는 모든 것으로"
-// 탈락: "무례하게 행하지 아니하며"는 "무례히"가 아니므로 오답
-function runNormalizationExamples(){
-  const examples = [
-    ['우리는깽 가리가 되고', '울리는 꽹과리가 되고'],
-    ['내가 4개 있는 모든 것으로', '내가 내게 있는 모든 것으로'],
-    ['물에힘 행하지 아니하며', '무례히 행하지 아니하며'],
-    ['브레인 행하지 아니하며', '무례히 행하지 아니하며'],
-    ['운전한 것이 올때에는', '온전한 것이 올 때에는'],
-    ['지식도 폐아리라', '지식도 폐하리라'],
-    ['강원도 고치고', '방언도 그치고'],
-    ['예영도 패하고', '예언도 폐하고']
-  ];
-  return examples.map(([input, expected]) => ({
-    input,
-    expected,
-    actual: normalizeTranscriptByVerse(input).text
-  }));
-}
+// ── 음성인식 ─────────────────────────────────────────────────────
+let recognition = null;
+let isListening = false;
+let finalTranscript = '';
+let latestCombinedTranscript = '';
+let silenceTimer = null;
+let lastWordCount = 0; // 직전 단어 수 (새 단어 인식 감지용)
+let lastWasWrong = false; // 연속 경고음 방지
 
 function initSpeech(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    $('noSupport').style.display = 'block';
-    setStatus('이 브라우저는 음성인식을 지원하지 않습니다', 'bad');
-    return false;
-  }
-
+  if(!SR){ document.getElementById('noSupport').style.display='block'; return false; }
   recognition = new SR();
   recognition.lang = 'ko-KR';
   recognition.continuous = true;
   recognition.interimResults = true;
 
-  recognition.onstart = () => {
-    resettingSpeech = false;
-    setMicUi(true);
+  recognition.onstart = ()=>{
+    isListening = true;
+    finalTranscript = '';
+    latestCombinedTranscript = '';
+    lastWordCount = 0;
+    lastWasWrong = false;
+    timerStart();
+    setListeningUI(true);
   };
 
-  recognition.onresult = event => {
-    if(!micOn || resettingSpeech) return;
+  recognition.onresult = (e)=>{
     let interim = '';
-    let gotFinal = false;
-    for(let i = event.resultIndex; i < event.results.length; i++){
-      const text = event.results[i][0].transcript;
-      if(event.results[i].isFinal){
-        finalText += text;
-        gotFinal = true;
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t = e.results[i][0].transcript;
+      if(e.results[i].isFinal) finalTranscript += t;
+      else interim += t;
+    }
+    const combined = applyLimitedCorrections(finalTranscript + interim);
+    latestCombinedTranscript = combined;
+
+    // 실시간 단어 단위 채점 표시
+    renderRealtime(combined, !!interim);
+
+    // 새 단어가 추가됐을 때만 소리/진동 체크
+    const currentWords = combined.trim().split(/\s+/).filter(Boolean);
+    if(currentWords.length > lastWordCount){
+      lastWordCount = currentWords.length;
+      const lastWord = currentWords[currentWords.length-1];
+      const isOk = isWordInFull(strip(lastWord));
+      if(!isOk && !lastWasWrong){
+        playWrongSound();
+        vibrateWrong();
+        lastWasWrong = true;
+      } else if(isOk){
+        lastWasWrong = false;
       }
-      else interim += text;
     }
-    lastInterimText = interim;
-    lastSpeechText = (finalText + interim).trim();
-    lastSpeechTime = Date.now();
-    scheduleSpeechStopCheck();
-    checkSpeech(lastSpeechText, Boolean(interim), gotFinal);
+
+    // 말 멈추면 1.8초 후 자동 채점
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(()=>{
+      if(isListening) stopAndGrade();
+    }, 1800);
   };
 
-  recognition.onerror = event => {
-    if(event.error === 'not-allowed'){
-      micOn = false;
-      shouldRestart = false;
-      resettingSpeech = false;
-      stopTimer();
-      setMicUi(false);
-      setStatus('마이크 권한을 허용해주세요', 'bad');
-      return;
+  recognition.onerror = (e)=>{
+    if(e.error==='not-allowed'){
+      document.getElementById('micStatus').textContent='⚠️ 마이크 권한을 허용해주세요';
     }
-    if(event.error === 'no-speech' && hasPendingSpeechText()){
-      scheduleImmediateStopEvaluation(200);
-    }
-    if(event.error !== 'no-speech' && event.error !== 'aborted'){
-      setStatus('음성 인식이 잠시 끊겼습니다. 다시 연결합니다', 'on');
-    }
+    setListeningUI(false);
+    timerStop();
   };
 
-  recognition.onend = () => {
-    setMicUi(false);
-    if(!resettingSpeech && micOn && hasPendingSpeechText()){
-      scheduleImmediateStopEvaluation(250);
-    }
-    if(shouldRestart && micOn){
-      setTimeout(() => {
-        if(shouldRestart && micOn){
-          try{ recognition.start(); } catch(e){}
-        }
-      }, resettingSpeech ? 180 : 300);
-    }
+  recognition.onend = ()=>{
+    if(isListening){ try{ recognition.start(); }catch(e){} }
   };
   return true;
 }
 
-function toggleMic(){
-  if(micOn) stopMic();
-  else startMic();
+// 단어 하나가 원문에 있는지 빠르게 확인
+const strippedFull = strip(FULL);
+function isWordInFull(strippedWord){
+  return strippedWord.length >= 2 && strippedFull.includes(strippedWord);
 }
 
-function startMic(){
-  if(!recognition && !initSpeech()) return;
-  micOn = true;
-  shouldRestart = true;
-  startedAt = Date.now();
-  resetBufferOnly();
-  setStatus('듣는 중입니다. 다시 누르면 종료됩니다', 'on');
-  setRecognized('듣고 있습니다', 'empty');
-  startTimer();
-  setMicUi(true);
-  try{ recognition.start(); } catch(e){}
-}
+// 실시간 텍스트 렌더 (단어 단위 색상)
+function renderRealtime(text, hasInterim){
+  const rec = document.getElementById('recognized');
+  rec.className = 'recognized' + (isListening?' listening':'');
+  if(!text.trim()){ rec.className+=' empty'; rec.textContent='듣고 있습니다…'; return; }
 
-function stopMic(){
-  micOn = false;
-  shouldRestart = false;
-  resettingSpeech = false;
-  clearTimeout(wrongTimer);
-  clearTimeout(speechStopTimer);
-  stopTimer();
-  try{ recognition && recognition.stop(); } catch(e){}
-  setMicUi(false);
-  setStatus('마이크가 꺼졌습니다', '');
-}
-
-function scheduleSpeechStopCheck(){
-  clearTimeout(speechStopTimer);
-  speechStopTimer = setTimeout(checkIfSpeechStopped, SPEECH_STOP_DELAY_MS);
-}
-
-function hasPendingSpeechText(){
-  return Boolean((finalText || lastInterimText || lastSpeechText || '').trim());
-}
-
-function scheduleImmediateStopEvaluation(delay=250){
-  clearTimeout(speechStopTimer);
-  speechStopTimer = setTimeout(() => {
-    if(!micOn || resettingSpeech) return;
-    if(hasPendingSpeechText()) evaluateCurrentTranscript();
-  }, delay);
-}
-
-function checkIfSpeechStopped(){
-  if(!micOn || resettingSpeech) return;
-  if(Date.now() - lastSpeechTime < SPEECH_STOP_DELAY_MS - 50){
-    scheduleSpeechStopCheck();
-    return;
-  }
-  evaluateCurrentTranscript();
-}
-
-function evaluateCurrentTranscript(){
-  const text = (finalText || lastInterimText || lastSpeechText || '').trim();
-  if(!text) return;
-  checkSpeech(text, false, true, true);
-}
-
-function checkSpeech(raw, isInterim, gotFinal=false, forceDecision=false){
-  const text = raw.trim();
-  const normalizedTranscript = normalizeTranscriptByVerse(text);
-  const norm = normalizedTranscript.norm;
-  liveNorm = norm;
-  if(!norm){
-    setRecognized('듣고 있습니다', 'empty');
-    return;
-  }
-
-  setRecognized(normalizedTranscript.text || text, '');
-  if(norm.length < 4) return;
-  if(!forceDecision && norm === lastChecked) return;
-  lastChecked = norm;
-
-  if(compareWithAnswer(normalizedTranscript)){
-    clearTimeout(wrongTimer);
-    clearTimeout(speechStopTimer);
-    setStatus('맞게 말하고 있습니다', 'ok');
-    setRecognized(normalizedTranscript.text || text, 'ok');
-    return;
-  }
-
-  clearTimeout(wrongTimer);
-  if(!forceDecision && (isInterim || !gotFinal || isPotentialPrefixOfAnswer(norm))){
-    setStatus('듣는 중입니다. 이어서 말하세요', 'on');
-    return;
-  }
-  handleWrong();
-}
-
-function handleWrong(){
-  try{ playWarning(); }catch(e){}
-  clearAllSpeechImmediately();
-}
-
-function clearAllSpeechImmediately(){
-  clearTimeout(wrongTimer);
-  clearTimeout(speechStopTimer);
-  resetBufferOnly();
-  setStatus('틀렸습니다. 다시 말하세요', 'bad');
-  setRecognized('다시 시작하세요', 'bad');
-
-  // 브라우저 음성인식 내부 확정 결과까지 비우기 위해 세션을 짧게 재시작한다.
-  if(micOn && recognition){
-    resettingSpeech = true;
-    shouldRestart = true;
-    try{
-      if(recognition.abort) recognition.abort();
-      else recognition.stop();
-    }catch(e){}
-  }
-
-  clearTimeout(clearMessageTimer);
-  clearMessageTimer = setTimeout(() => {
-    if(micOn){
-      setStatus('듣는 중입니다. 다시 말하세요', 'on');
-      setRecognized('듣고 있습니다', 'empty');
+  const words = text.trim().split(/\s+/);
+  // 마지막 단어는 interim이면 회색
+  let html = '';
+  words.forEach((w,i)=>{
+    const isLast = i === words.length-1;
+    const sw = strip(w);
+    if(isLast && hasInterim){
+      html += `<span class="rt-interim">${w} </span>`;
+    } else {
+      const ok = isWordInFull(sw);
+      html += `<span class="${ok?'rt-ok':'rt-bad'}">${w} </span>`;
     }
-  }, 700);
+  });
+  rec.innerHTML = html;
 }
 
-function resetBufferOnly(){
-  finalText = '';
-  lastInterimText = '';
-  lastSpeechText = '';
-  lastChecked = '';
-  liveNorm = '';
-  lastSpeechTime = 0;
+function toggleMic(){
+  if(!recognition && !initSpeech()) return;
+  if(isListening) stopAndGrade();
+  else startListening();
 }
 
-function clearAttempt(){
-  clearTimeout(wrongTimer);
-  clearTimeout(speechStopTimer);
-  resetBufferOnly();
-  if(micOn && recognition){
-    resettingSpeech = true;
-    shouldRestart = true;
-    try{
-      if(recognition.abort) recognition.abort();
-      else recognition.stop();
-    }catch(e){}
-  }
-  if(!micOn){
-    setStatus('마이크를 누르면 시작합니다', '');
-    setRecognized('말씀을 말하면 여기에 짧게 표시됩니다', 'empty');
+function startListening(){
+  finalTranscript = '';
+  latestCombinedTranscript = '';
+  const rec = document.getElementById('recognized');
+  rec.className='recognized empty';
+  rec.textContent='듣고 있습니다…';
+  document.getElementById('result').classList.remove('show');
+  try{ recognition.start(); }catch(e){}
+}
+
+function stopAndGrade(){
+  isListening = false;
+  clearTimeout(silenceTimer);
+  timerStop();
+  try{ recognition.stop(); }catch(e){}
+  setListeningUI(false);
+  const text = applyLimitedCorrections((finalTranscript || latestCombinedTranscript).trim());
+  if(text) gradeText(text);
+  else document.getElementById('micStatus').textContent='인식된 내용이 없습니다. 다시 시도해보세요.';
+}
+
+function setListeningUI(on){
+  const btn=document.getElementById('micBtn');
+  const st=document.getElementById('micStatus');
+  if(on){
+    btn.classList.add('listening');
+    st.className='mic-status listening';
+    st.textContent='🔴 듣는 중… 말씀을 암송하세요 (끝나면 잠시 멈추세요)';
   } else {
-    setStatus('듣는 중입니다. 다시 말하세요', 'on');
-    setRecognized('듣고 있습니다', 'empty');
+    btn.classList.remove('listening');
+    st.className='mic-status done';
+    st.textContent='채점 완료 — 다시 누르면 재시작';
   }
 }
 
-function resetAll(){
-  stopMic();
-  resetBufferOnly();
-  startedAt = null;
-  clearTimeout(clearMessageTimer);
-  clearTimeout(wrongTimer);
-  clearTimeout(speechStopTimer);
-  $('timer').textContent = '00:00';
-  setStatus('마이크를 누르면 시작합니다', '');
-  setRecognized('말씀을 말하면 여기에 짧게 표시됩니다', 'empty');
+// ── 수동 입력 ─────────────────────────────────────────────────────
+function toggleManual(){
+  document.getElementById('manualWrap').classList.toggle('show');
+}
+function gradeManual(){
+  const t = applyLimitedCorrections(document.getElementById('manualInput').value.trim());
+  if(!t) return;
+  timerStop();
+  gradeText(t);
 }
 
-function setMicUi(on){
-  $('micBtn').classList.toggle('listening', on && micOn);
-  $('micBtn').setAttribute('aria-label', on && micOn ? '마이크 종료' : '마이크 시작');
+// ── 채점 공통 ─────────────────────────────────────────────────────
+function strip(s){ return s.replace(/[\s.,!?;:'"·…—\-]/g,''); }
+
+function longestCommonSubstring(a,b){
+  const m=a.length,n=b.length;
+  let best=0,endA=0,endB=0;
+  const dp=new Uint16Array(m*n);
+  for(let i=0;i<m;i++){
+    for(let j=0;j<n;j++){
+      if(a[i]===b[j]){
+        const prev=i>0&&j>0?dp[(i-1)*n+(j-1)]:0;
+        const v=prev+1; dp[i*n+j]=v;
+        if(v>best){best=v;endA=i;endB=j;}
+      }
+    }
+  }
+  return{len:best,startA:endA-best+1,endA,startB:endB-best+1,endB};
 }
 
-function setStatus(text, type=''){
-  $('status').className = `status ${type}`.trim();
-  $('status').textContent = text;
+function findMatches(a,b,offA=0,offB=0,res=[]){
+  if(a.length===0||b.length===0) return res;
+  const r=longestCommonSubstring(a,b);
+  if(r.len<2) return res;
+  res.push({sA:offA+r.startA,eA:offA+r.endA,sB:offB+r.startB,eB:offB+r.endB});
+  findMatches(a.slice(0,r.startA),b.slice(0,r.startB),offA,offB,res);
+  findMatches(a.slice(r.endA+1),b.slice(r.endB+1),offA+r.endA+1,offB+r.endB+1,res);
+  return res;
 }
 
-function setRecognized(text, type=''){
-  $('recognized').className = `recognized ${type}`.trim();
-  $('recognized').textContent = text;
+function buildMap(original){
+  const map=[];
+  for(let i=0;i<original.length;i++)
+    if(!/[\s.,!?;:'"·…—\-]/.test(original[i])) map.push(i);
+  return map;
 }
 
-function startTimer(){
-  if(!startedAt) startedAt = Date.now();
-  clearInterval(timerId);
-  updateTimer();
-  timerId = setInterval(updateTimer, 250);
+function gradeText(raw){
+  const si=strip(raw), sf=strip(FULL);
+  const matches=findMatches(si,sf);
+  const mA=new Set(),mB=new Set();
+  matches.forEach(({sA,eA,sB,eB})=>{
+    for(let i=sA;i<=eA;i++) mA.add(i);
+    for(let i=sB;i<=eB;i++) mB.add(i);
+  });
+
+  const total=si.length, correct=mA.size;
+  const pct=total===0?0:Math.round(correct/total*100);
+
+  let grade,icon,title,sub;
+  if(pct===100){grade='perfect';icon='🎯';title='완벽합니다!';sub='원문과 완전히 일치합니다.';}
+  else if(pct>=80){grade='partial';icon='👍';title=`거의 다 맞았어요 (${pct}%)`;sub=`${total}자 중 ${correct}자 일치`;}
+  else if(pct>=50){grade='partial';icon='📖';title=`절반 이상 맞았어요 (${pct}%)`;sub=`${total}자 중 ${correct}자 일치`;}
+  else{grade='fail';icon='✏️';title=`다시 도전해요 (${pct}%)`;sub=`${total}자 중 ${correct}자만 일치했습니다.`;}
+
+  // 최종 결과 소리/진동
+  if(pct>=80){ playCorrectSound(); vibrateCorrect(); }
+  else { playWrongSound(); vibrateWrong(); }
+
+  // 최고 기록 갱신
+  updateBestTime(pct);
+
+  document.getElementById('banner').className='banner '+grade;
+  document.getElementById('bIcon').textContent=icon;
+  document.getElementById('bTitle').textContent=title;
+  document.getElementById('bSub').textContent=sub;
+
+  // 타이머 뱃지
+  const badge = document.getElementById('timeBadge');
+  const isBest = bestTime !== null && sessionTime === bestTime && pct >= 80;
+  badge.className = 'time-badge' + (isBest?' best':'');
+  badge.textContent = (isBest?'🏆 최고기록 ':'⏱ ') + formatTime(sessionTime);
+
+  // diff
+  const mapI=buildMap(raw);
+  const rawArr=[...raw];
+  const colI=new Array(raw.length).fill('none');
+  mapI.forEach((oi,si)=>{ colI[oi]=mA.has(si)?'ok':'bad'; });
+  let diffH='';
+  for(let i=0;i<rawArr.length;i++){
+    const ch=rawArr[i].replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    if(colI[i]==='ok') diffH+=`<span class="ch-ok">${ch}</span>`;
+    else if(colI[i]==='bad') diffH+=`<span class="ch-bad">${ch}</span>`;
+    else diffH+=ch;
+  }
+  document.getElementById('diffBox').innerHTML=diffH;
+
+  // 원문 하이라이트
+  const mapF=buildMap(FULL);
+  const fullArr=[...FULL];
+  const colF=new Array(FULL.length).fill('none');
+  mapF.forEach((oi,si)=>{ if(mB.has(si)) colF[oi]='hl'; });
+  let ansH='';
+  for(let i=0;i<fullArr.length;i++){
+    const ch=fullArr[i].replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    ansH+=colF[i]==='hl'?`<span class="ans-hl">${ch}</span>`:ch;
+  }
+  document.getElementById('ansBox').innerHTML=ansH;
+
+  document.getElementById('result').classList.add('show');
+  setTimeout(()=>document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'}),80);
 }
 
-function stopTimer(){
-  clearInterval(timerId);
-  timerId = null;
+function retry(){
+  document.getElementById('result').classList.remove('show');
+  finalTranscript = '';
+  latestCombinedTranscript = '';
+  clearTimeout(silenceTimer);
+  const rec=document.getElementById('recognized');
+  rec.className='recognized empty';
+  rec.textContent='말씀을 말하면 여기에 실시간으로 표시됩니다';
+  document.getElementById('micStatus').className='mic-status';
+  document.getElementById('micStatus').textContent='버튼을 누르고 말씀을 암송하세요';
+  timerSeconds=0;
+  document.getElementById('timerDisplay').className='timer-display';
+  document.getElementById('timerDisplay').textContent='00:00';
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function updateTimer(){
-  const total = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
-  $('timer').textContent = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
-}
-
-function playWarning(){
-  playTone(220,.16,'sawtooth',.1);
-  setTimeout(() => playTone(170,.18,'sawtooth',.09), 120);
-}
-
-function playTone(freq,duration,type,volume){
-  try{
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    if(audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.value = volume;
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + duration);
-    osc.stop(audioCtx.currentTime + duration);
-  }catch(e){}
-}
-
-if(!window.SpeechRecognition && !window.webkitSpeechRecognition){
-  $('noSupport').style.display = 'block';
-}
+if(!window.SpeechRecognition&&!window.webkitSpeechRecognition)
+  document.getElementById('noSupport').style.display='block';
 </script>
 </body>
 </html>
