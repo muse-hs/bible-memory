@@ -423,10 +423,48 @@ function updateBestTime(pct){
 let recognition = null;
 let isListening = false;
 let finalTranscript = '';
-let latestCombinedTranscript = '';
+let displayTranscript = '';
+let scoringTranscript = '';
 let silenceTimer = null;
-let lastWordCount = 0; // 직전 단어 수 (새 단어 인식 감지용)
-let lastWasWrong = false; // 연속 경고음 방지
+let expectedIndex = 0;
+let hasWarnedForCurrentError = false;
+const SILENCE_DECISION_MS = 1500;
+const FULL_WORDS = splitSpeechWords(FULL);
+const FULL_WORD_STRIPS = FULL_WORDS.map(strip);
+
+function buildSpeechEvaluation(rawText){
+  const displayText = normalizeSpeechSpaces(rawText);
+  const scoringText = applyLimitedCorrections(displayText);
+  const displayWords = splitSpeechWords(displayText);
+  const scoringWords = splitSpeechWords(scoringText);
+
+  let matchedCount = 0;
+  let mismatchIndex = -1;
+  for(let i=0;i<scoringWords.length;i++){
+    if(i >= FULL_WORD_STRIPS.length){
+      mismatchIndex = i;
+      break;
+    }
+    if(strip(scoringWords[i]) === FULL_WORD_STRIPS[i]) matchedCount++;
+    else {
+      mismatchIndex = i;
+      break;
+    }
+  }
+
+  return {
+    displayText,
+    scoringText,
+    displayWords,
+    scoringWords,
+    matchedCount,
+    expectedIndex: matchedCount,
+    mismatchIndex,
+    mismatchDisplayIndex: mismatchIndex >= 0 ? Math.min(mismatchIndex, Math.max(displayWords.length - 1, 0)) : -1,
+    expectedWord: FULL_WORDS[matchedCount] || '',
+    isComplete: matchedCount === FULL_WORDS.length && mismatchIndex === -1
+  };
+}
 
 function initSpeech(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -439,46 +477,47 @@ function initSpeech(){
   recognition.onstart = ()=>{
     isListening = true;
     finalTranscript = '';
-    latestCombinedTranscript = '';
-    lastWordCount = 0;
-    lastWasWrong = false;
+    displayTranscript = '';
+    scoringTranscript = '';
+    expectedIndex = 0;
+    hasWarnedForCurrentError = false;
     timerStart();
     setListeningUI(true);
   };
 
   recognition.onresult = (e)=>{
     let interim = '';
+    let gotFinal = false;
     for(let i=e.resultIndex;i<e.results.length;i++){
       const t = e.results[i][0].transcript;
-      if(e.results[i].isFinal) finalTranscript += t;
+      if(e.results[i].isFinal){
+        finalTranscript += t;
+        gotFinal = true;
+      }
       else interim += t;
     }
-    const combined = applyLimitedCorrections(finalTranscript + interim);
-    latestCombinedTranscript = combined;
+    const combined = normalizeSpeechSpaces(finalTranscript + interim);
+    const evaluation = buildSpeechEvaluation(combined);
+    displayTranscript = evaluation.displayText;
+    scoringTranscript = evaluation.scoringText;
+    expectedIndex = evaluation.expectedIndex;
 
-    // 실시간 단어 단위 채점 표시
-    renderRealtime(combined, !!interim);
+    renderRealtime(evaluation, !!interim);
 
-    // 새 단어가 추가됐을 때만 소리/진동 체크
-    const currentWords = combined.trim().split(/\s+/).filter(Boolean);
-    if(currentWords.length > lastWordCount){
-      lastWordCount = currentWords.length;
-      const lastWord = currentWords[currentWords.length-1];
-      const isOk = isWordInFull(strip(lastWord));
-      if(!isOk && !lastWasWrong){
-        playWrongSound();
-        vibrateWrong();
-        lastWasWrong = true;
-      } else if(isOk){
-        lastWasWrong = false;
-      }
+    if(evaluation.mismatchIndex >= 0 && gotFinal){
+      failCurrentSpeech(evaluation);
+      return;
+    }
+    if(evaluation.isComplete){
+      stopAndGrade();
+      return;
     }
 
     // 말 멈추면 1.8초 후 자동 채점
     clearTimeout(silenceTimer);
     silenceTimer = setTimeout(()=>{
-      if(isListening) stopAndGrade();
-    }, 1800);
+      if(isListening) evaluateCurrentTranscript();
+    }, SILENCE_DECISION_MS);
   };
 
   recognition.onerror = (e)=>{
@@ -495,32 +534,63 @@ function initSpeech(){
   return true;
 }
 
-// 단어 하나가 원문에 있는지 빠르게 확인
-const strippedFull = strip(FULL);
-function isWordInFull(strippedWord){
-  return strippedWord.length >= 2 && strippedFull.includes(strippedWord);
-}
-
-// 실시간 텍스트 렌더 (단어 단위 색상)
-function renderRealtime(text, hasInterim){
+// 실시간 텍스트 렌더 (displayTranscript는 원문 그대로, 채점만 내부 scoringTranscript 사용)
+function renderRealtime(evaluation, hasInterim){
   const rec = document.getElementById('recognized');
   rec.className = 'recognized' + (isListening?' listening':'');
-  if(!text.trim()){ rec.className+=' empty'; rec.textContent='듣고 있습니다…'; return; }
+  if(!evaluation.displayText.trim()){ rec.className+=' empty'; rec.textContent='듣고 있습니다…'; return; }
 
-  const words = text.trim().split(/\s+/);
-  // 마지막 단어는 interim이면 회색
+  const words = evaluation.displayWords;
   let html = '';
   words.forEach((w,i)=>{
     const isLast = i === words.length-1;
-    const sw = strip(w);
-    if(isLast && hasInterim){
+    const isMismatch = evaluation.mismatchDisplayIndex === i;
+    if(isMismatch){
+      html += `<span class="rt-bad">${w} </span>`;
+    } else if(i < evaluation.matchedCount){
+      html += `<span class="rt-ok">${w} </span>`;
+    } else if(isLast && hasInterim){
       html += `<span class="rt-interim">${w} </span>`;
     } else {
-      const ok = isWordInFull(sw);
-      html += `<span class="${ok?'rt-ok':'rt-bad'}">${w} </span>`;
+      html += `<span>${w} </span>`;
     }
   });
   rec.innerHTML = html;
+}
+
+function evaluateCurrentTranscript(){
+  const evaluation = buildSpeechEvaluation(displayTranscript || finalTranscript);
+  displayTranscript = evaluation.displayText;
+  scoringTranscript = evaluation.scoringText;
+  expectedIndex = evaluation.expectedIndex;
+  renderRealtime(evaluation, false);
+
+  if(evaluation.isComplete){
+    stopAndGrade();
+    return;
+  }
+  if(evaluation.mismatchIndex >= 0){
+    failCurrentSpeech(evaluation);
+    return;
+  }
+  const st = document.getElementById('micStatus');
+  st.className='mic-status listening';
+  st.textContent='🔴 듣는 중… 이어서 암송하세요';
+}
+
+function failCurrentSpeech(evaluation){
+  if(!hasWarnedForCurrentError){
+    playWrongSound();
+    vibrateWrong();
+    hasWarnedForCurrentError = true;
+  }
+  stopAndResetListening();
+  renderRealtime(evaluation, false);
+  const st = document.getElementById('micStatus');
+  st.className='mic-status listening';
+  st.textContent = evaluation.expectedWord
+    ? `틀렸습니다. 다음에 와야 할 단어: ${evaluation.expectedWord}`
+    : '틀렸습니다. 다시 시작하세요';
 }
 
 function toggleMic(){
@@ -531,7 +601,11 @@ function toggleMic(){
 
 function startListening(){
   finalTranscript = '';
-  latestCombinedTranscript = '';
+  displayTranscript = '';
+  scoringTranscript = '';
+  expectedIndex = 0;
+  hasWarnedForCurrentError = false;
+  clearTimeout(silenceTimer);
   const rec = document.getElementById('recognized');
   rec.className='recognized empty';
   rec.textContent='듣고 있습니다…';
@@ -539,13 +613,17 @@ function startListening(){
   try{ recognition.start(); }catch(e){}
 }
 
-function stopAndGrade(){
+function stopAndResetListening(){
   isListening = false;
   clearTimeout(silenceTimer);
   timerStop();
   try{ recognition.stop(); }catch(e){}
   setListeningUI(false);
-  const text = applyLimitedCorrections((finalTranscript || latestCombinedTranscript).trim());
+}
+
+function stopAndGrade(){
+  stopAndResetListening();
+  const text = scoringTranscript.trim();
   if(text) gradeText(text);
   else document.getElementById('micStatus').textContent='인식된 내용이 없습니다. 다시 시도해보세요.';
 }
@@ -569,7 +647,8 @@ function toggleManual(){
   document.getElementById('manualWrap').classList.toggle('show');
 }
 function gradeManual(){
-  const t = applyLimitedCorrections(document.getElementById('manualInput').value.trim());
+  const displayText = normalizeSpeechSpaces(document.getElementById('manualInput').value.trim());
+  const t = applyLimitedCorrections(displayText);
   if(!t) return;
   timerStop();
   gradeText(t);
@@ -680,7 +759,10 @@ function gradeText(raw){
 function retry(){
   document.getElementById('result').classList.remove('show');
   finalTranscript = '';
-  latestCombinedTranscript = '';
+  displayTranscript = '';
+  scoringTranscript = '';
+  expectedIndex = 0;
+  hasWarnedForCurrentError = false;
   clearTimeout(silenceTimer);
   const rec=document.getElementById('recognized');
   rec.className='recognized empty';
