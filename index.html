@@ -210,16 +210,30 @@ const LIMITED_PHRASE_CORRECTIONS = {
   '우리는 꽹가리가 되고': '울리는 꽹과리가 되고',
   '우리는 꽹관리가 되고': '울리는 꽹과리가 되고',
   '우리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
+  '우리는깽 가리 되고': '울리는 꽹과리가 되고',
+  '우리는 깽가리 되고': '울리는 꽹과리가 되고',
+  '우리는 깽다리 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹가리 되고': '울리는 꽹과리가 되고',
+  '우리는 꽹관리 되고': '울리는 꽹과리가 되고',
   '울리는 깽가리가 되고': '울리는 꽹과리가 되고',
   '울리는 깽다리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹가리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹관리가 되고': '울리는 꽹과리가 되고',
   '울리는 꽹 과리가 되고': '울리는 꽹과리가 되고',
+  '울리는 깽가리 되고': '울리는 꽹과리가 되고',
+  '울리는 깽다리 되고': '울리는 꽹과리가 되고',
+  '울리는 꽹가리 되고': '울리는 꽹과리가 되고',
+  '울리는 꽹관리 되고': '울리는 꽹과리가 되고',
   '깽가리가 되고': '꽹과리가 되고',
   '깽다리가 되고': '꽹과리가 되고',
   '꽹가리가 되고': '꽹과리가 되고',
   '꽹관리가 되고': '꽹과리가 되고',
   '깽과이가 되고': '꽹과리가 되고',
+  '깽가리 되고': '꽹과리가 되고',
+  '깽다리 되고': '꽹과리가 되고',
+  '꽹가리 되고': '꽹과리가 되고',
+  '꽹관리 되고': '꽹과리가 되고',
+  '깽과이 되고': '꽹과리가 되고',
   '꽹과리가 대구': '꽹과리가 되고',
   '깽가리가 대구': '꽹과리가 되고',
   '물에 이행하지 아니하며': '무례히 행하지 아니하며',
@@ -240,6 +254,13 @@ const LIMITED_PHRASE_CORRECTIONS = {
   '무례이 행하지 아니하며': '무례히 행하지 아니하며',
   '무레히 행하지 아니하며': '무례히 행하지 아니하며',
   '무래히 행하지 아니하며': '무례히 행하지 아니하며',
+  '무레이 행하지 아니하며': '무례히 행하지 아니하며',
+  '무래이 행하지 아니하며': '무례히 행하지 아니하며',
+  '무리히 행하지 아니하며': '무례히 행하지 아니하며',
+  '무료히 행하지 아니하며': '무례히 행하지 아니하며',
+  '물레히 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에이 행하지 아니하며': '무례히 행하지 아니하며',
+  '물에 희 행하지 아니하며': '무례히 행하지 아니하며',
   '물에히 행하지 아니하며': '무례히 행하지 아니하며',
   '물에희 행하지 아니하며': '무례히 행하지 아니하며',
   '떨어지지 아니하대': '떨어지지 아니하되',
@@ -285,25 +306,16 @@ const LIMITED_WORD_CORRECTIONS = {
   '깽다리': '꽹과리',
   '꽹가리': '꽹과리',
   '꽹관리': '꽹과리',
-  '깽과이': '꽹과리',
-  '물에힘': '무례히',
-  '물의힘': '무례히',
-  '무례희': '무례히',
-  '물레희': '무례히',
-  '무대희': '무례히',
-  '물례희': '무례히',
-  '물레이': '무례히',
-  '브레인': '무례히',
-  '구래힘': '무례히',
-  '울애기': '무례히',
-  '울레희': '무례히',
-  '물랭이': '무례히',
-  '무례이': '무례히',
-  '무레히': '무례히',
-  '무래히': '무례히',
-  '물에히': '무례히',
-  '물에희': '무례히'
+  '깽과이': '꽹과리'
 };
+
+const MURYEHI_CONTEXT_VARIANTS = [
+  '물에', '물에이', '물에 희', '물에희', '물에히', '물에힘',
+  '물의힘', '무례이', '무례희', '무레히', '무레희', '무래히',
+  '무래이', '무레이', '무리히', '무료히', '물레히', '물레희',
+  '무대희', '물례희', '물레이', '브레인', '구래힘', '울애기',
+  '울레희', '물랭이'
+];
 
 // ── 경고음 (Web Audio API) ───────────────────────────────────────
 let audioCtx = null;
@@ -364,6 +376,14 @@ function applyLimitedCorrections(text){
       corrected = corrected.replace(new RegExp(pattern, 'gi'), target);
     });
 
+  MURYEHI_CONTEXT_VARIANTS.forEach(variant => {
+    const pattern = splitSpeechWords(variant).map(escapeRegExp).join('\\s*');
+    corrected = corrected.replace(new RegExp(`${pattern}\\s*(?=(?:이\\s*)?행하지)`, 'gi'), '무례히 ');
+  });
+  corrected = corrected
+    .replace(/무례히\s+이\s*행하지/gi, '무례히 행하지')
+    .replace(/우리\s+이\s*행하지/gi, '무례히 행하지');
+
   corrected = splitSpeechWords(corrected).map(word => {
     return LIMITED_WORD_CORRECTIONS[strip(word)] || word;
   }).join(' ');
@@ -371,6 +391,14 @@ function applyLimitedCorrections(text){
   corrected = corrected.replace(/((?:울리는\s+)?(?:꽹과리|깽가리|깽다리|꽹가리|꽹관리|깽과이)가?)\s+대구\b/gi, '$1 되고');
   return normalizeSpeechSpaces(corrected);
 }
+
+/*
+채점용 보정 점검 예시:
+- "우리는깽 가리가 되고" -> 내부 비교: "울리는 꽹과리가 되고"
+- "물에 행하지 아니하며" -> 내부 비교: "무례히 행하지 아니하며"
+- "무례히 행하지 아니하고" -> "아니하고"가 원문에 없으므로 오답 표시
+- "물에 물을 마셨습니다" -> "물에" 단독은 보정하지 않으므로 오답 표시
+*/
 
 // ── 진동 ─────────────────────────────────────────────────────────
 function vibrateWrong(){
@@ -414,6 +442,7 @@ let displayTranscript = '';
 let scoringTranscript = '';
 let silenceTimer = null;
 let wrongDisplayIndices = new Set();
+let correctDisplayIndices = new Set();
 let warnedWrongIndices = new Set();
 let restartWindowStartedAt = 0;
 let restartAttempts = 0;
@@ -445,20 +474,59 @@ function isCorrectSpokenChunk(word){
   return normalized.length > 0 && FULL_STRIPPED.includes(normalized);
 }
 
-function processDisplayWords(evaluation){
-  evaluation.displayWords.forEach((word, index) => {
-    const scoringWord = evaluation.scoringWords[index] || word;
-    if(isCorrectSpokenChunk(scoringWord)){
-      wrongDisplayIndices.delete(index);
-      warnedWrongIndices.delete(index);
-      return;
+function findCorrectWordIndices(scoringWords){
+  const correct = new Set();
+  let index = 0;
+  while(index < scoringWords.length){
+    let matchedLength = 0;
+    for(let length = scoringWords.length - index; length >= 1; length--){
+      const phrase = strip(scoringWords.slice(index, index + length).join(' '));
+      const allowSingle = length > 1 || phrase.length >= 3;
+      if(allowSingle && FULL_STRIPPED.includes(phrase)){
+        matchedLength = length;
+        break;
+      }
     }
-    wrongDisplayIndices.add(index);
-    if(!warnedWrongIndices.has(index)){
-      warnedWrongIndices.add(index);
-      playWrongSound();
+    if(matchedLength > 0){
+      for(let i = index; i < index + matchedLength; i++) correct.add(i);
+      index += matchedLength;
+    } else {
+      index++;
     }
-  });
+  }
+  return correct;
+}
+
+function markDisplayRange(start, count, isCorrect){
+  for(let i = start; i < start + count; i++){
+    if(isCorrect){
+      correctDisplayIndices.add(i);
+      wrongDisplayIndices.delete(i);
+      warnedWrongIndices.delete(i);
+    } else {
+      wrongDisplayIndices.add(i);
+      correctDisplayIndices.delete(i);
+      if(!warnedWrongIndices.has(i)){
+        warnedWrongIndices.add(i);
+        playWrongSound();
+      }
+    }
+  }
+}
+
+function processSpeechChunk(rawChunk, displayWordOffset){
+  const chunk = buildSpeechEvaluation(rawChunk);
+  if(!chunk.displayWords.length) return;
+  if(isCorrectSpokenChunk(chunk.scoringText)){
+    markDisplayRange(displayWordOffset, chunk.displayWords.length, true);
+  } else if(chunk.displayWords.length === chunk.scoringWords.length){
+    const correctWordIndices = findCorrectWordIndices(chunk.scoringWords);
+    chunk.displayWords.forEach((_, index) => {
+      markDisplayRange(displayWordOffset + index, 1, correctWordIndices.has(index));
+    });
+  } else {
+    markDisplayRange(displayWordOffset, chunk.displayWords.length, false);
+  }
 
   if(wrongDisplayIndices.size > 0){
     const st = document.getElementById('micStatus');
@@ -469,16 +537,13 @@ function processDisplayWords(evaluation){
 
 function clearWrongState(){
   wrongDisplayIndices.clear();
+  correctDisplayIndices.clear();
   warnedWrongIndices.clear();
 }
 
 function evaluateIncomingSpeech(rawText, options={}){
-  const { processNewWords = false, hasInterim = false } = options;
+  const { hasInterim = false } = options;
   const evaluation = updateLiveTranscripts(rawText);
-
-  if(processNewWords){
-    processDisplayWords(evaluation);
-  }
 
   renderRealtime(evaluation, hasInterim);
 
@@ -493,8 +558,11 @@ function evaluateIncomingSpeech(rawText, options={}){
 
 function evaluatePauseState(){
   if(!isListening) return;
+  if(latestInterimTranscript){
+    processSpeechChunk(latestInterimTranscript, splitSpeechWords(finalTranscript).length);
+  }
   const combined = normalizeSpeechSpaces(`${finalTranscript} ${latestInterimTranscript}`);
-  const evaluation = evaluateIncomingSpeech(combined, { processNewWords: true, hasInterim: false });
+  const evaluation = evaluateIncomingSpeech(combined, { hasInterim: false });
   if(!evaluation) return;
   renderRealtime(evaluation, false);
 }
@@ -545,19 +613,19 @@ function initSpeech(){
 
   recognition.onresult = (e)=>{
     let interim = '';
-    let gotFinal = false;
     for(let i=e.resultIndex;i<e.results.length;i++){
       const t = e.results[i][0].transcript;
       if(e.results[i].isFinal){
+        const displayWordOffset = splitSpeechWords(finalTranscript).length;
         finalTranscript = normalizeSpeechSpaces(`${finalTranscript} ${t}`);
-        gotFinal = true;
+        processSpeechChunk(t, displayWordOffset);
       } else {
         interim += t;
       }
     }
     latestInterimTranscript = normalizeSpeechSpaces(interim);
     const combined = normalizeSpeechSpaces(`${finalTranscript} ${latestInterimTranscript}`);
-    evaluateIncomingSpeech(combined, { processNewWords: gotFinal, hasInterim: Boolean(latestInterimTranscript) });
+    evaluateIncomingSpeech(combined, { hasInterim: Boolean(latestInterimTranscript) });
     scheduleSilenceEvaluation();
   };
 
@@ -592,11 +660,9 @@ function renderRealtime(evaluation, hasInterim){
   let html = '';
   evaluation.displayWords.forEach((word, index) => {
     const isLast = index === evaluation.displayWords.length - 1;
-    const scoringWord = evaluation.scoringWords[index] || word;
-    const isCorrect = isCorrectSpokenChunk(scoringWord);
     if(wrongDisplayIndices.has(index)){
       html += `<span class="rt-bad">${word} </span>`;
-    } else if(isCorrect){
+    } else if(correctDisplayIndices.has(index)){
       html += `<span class="rt-ok">${word} </span>`;
     } else if(isLast && hasInterim){
       html += `<span class="rt-interim">${word} </span>`;
