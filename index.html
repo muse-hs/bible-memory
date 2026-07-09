@@ -238,6 +238,8 @@ const LIMITED_PHRASE_CORRECTIONS = {
   '깽가리가 대구': '꽹과리가 되고',
   '물에 이행하지 아니하며': '무례히 행하지 아니하며',
   '물에 행하지 아니하며': '무례히 행하지 아니하며',
+  '물의 이행하지 아니하며': '무례히 행하지 아니하며',
+  '물의 행하지 아니하며': '무례히 행하지 아니하며',
   '우리 이행하지 아니하며': '무례히 행하지 아니하며',
   '물에힘 행하지 아니하며': '무례히 행하지 아니하며',
   '물의힘 행하지 아니하며': '무례히 행하지 아니하며',
@@ -311,7 +313,8 @@ const LIMITED_WORD_CORRECTIONS = {
 
 const MURYEHI_CONTEXT_VARIANTS = [
   '물에', '물에이', '물에 희', '물에희', '물에히', '물에힘',
-  '물의힘', '무례이', '무례희', '무레히', '무레희', '무래히',
+  '물의', '물의이', '물의 희', '물의희', '물의히', '물의힘',
+  '무례이', '무례희', '무레히', '무레희', '무래히',
   '무래이', '무레이', '무리히', '무료히', '물레히', '물레희',
   '무대희', '물례희', '물레이', '브레인', '구래힘', '울애기',
   '울레희', '물랭이'
@@ -444,6 +447,7 @@ let silenceTimer = null;
 let wrongDisplayIndices = new Set();
 let correctDisplayIndices = new Set();
 let warnedWrongIndices = new Set();
+let interimPreviewStart = null;
 let restartWindowStartedAt = 0;
 let restartAttempts = 0;
 const SILENCE_DECISION_MS = 2200;
@@ -452,8 +456,9 @@ const MAX_RESTARTS_PER_WINDOW = 5;
 const FULL_STRIPPED = strip(FULL);
 
 function buildSpeechEvaluation(rawText){
-  const displayText = normalizeSpeechSpaces(rawText);
-  const scoringText = applyLimitedCorrections(displayText);
+  const rawDisplayText = normalizeSpeechSpaces(rawText);
+  const scoringText = applyLimitedCorrections(rawDisplayText);
+  const displayText = scoringText || rawDisplayText;
   return {
     displayText,
     scoringText,
@@ -467,6 +472,10 @@ function updateLiveTranscripts(rawText){
   displayTranscript = evaluation.displayText;
   scoringTranscript = evaluation.scoringText;
   return evaluation;
+}
+
+function getFinalDisplayWordCount(){
+  return splitSpeechWords(applyLimitedCorrections(finalTranscript)).length;
 }
 
 function isCorrectSpokenChunk(word){
@@ -514,6 +523,14 @@ function markDisplayRange(start, count, isCorrect){
   }
 }
 
+function clearDisplayMarksFrom(start){
+  [wrongDisplayIndices, correctDisplayIndices, warnedWrongIndices].forEach(set => {
+    [...set].forEach(index => {
+      if(index >= start) set.delete(index);
+    });
+  });
+}
+
 function processSpeechChunk(rawChunk, displayWordOffset){
   const chunk = buildSpeechEvaluation(rawChunk);
   if(!chunk.displayWords.length) return;
@@ -539,6 +556,7 @@ function clearWrongState(){
   wrongDisplayIndices.clear();
   correctDisplayIndices.clear();
   warnedWrongIndices.clear();
+  interimPreviewStart = null;
 }
 
 function evaluateIncomingSpeech(rawText, options={}){
@@ -559,7 +577,7 @@ function evaluateIncomingSpeech(rawText, options={}){
 function evaluatePauseState(){
   if(!isListening) return;
   if(latestInterimTranscript){
-    processSpeechChunk(latestInterimTranscript, splitSpeechWords(finalTranscript).length);
+    processSpeechChunk(latestInterimTranscript, getFinalDisplayWordCount());
   }
   const combined = normalizeSpeechSpaces(`${finalTranscript} ${latestInterimTranscript}`);
   const evaluation = evaluateIncomingSpeech(combined, { hasInterim: false });
@@ -613,10 +631,14 @@ function initSpeech(){
 
   recognition.onresult = (e)=>{
     let interim = '';
+    if(interimPreviewStart !== null){
+      clearDisplayMarksFrom(interimPreviewStart);
+      interimPreviewStart = null;
+    }
     for(let i=e.resultIndex;i<e.results.length;i++){
       const t = e.results[i][0].transcript;
       if(e.results[i].isFinal){
-        const displayWordOffset = splitSpeechWords(finalTranscript).length;
+        const displayWordOffset = getFinalDisplayWordCount();
         finalTranscript = normalizeSpeechSpaces(`${finalTranscript} ${t}`);
         processSpeechChunk(t, displayWordOffset);
       } else {
@@ -624,6 +646,10 @@ function initSpeech(){
       }
     }
     latestInterimTranscript = normalizeSpeechSpaces(interim);
+    if(latestInterimTranscript){
+      interimPreviewStart = getFinalDisplayWordCount();
+      processSpeechChunk(latestInterimTranscript, interimPreviewStart);
+    }
     const combined = normalizeSpeechSpaces(`${finalTranscript} ${latestInterimTranscript}`);
     evaluateIncomingSpeech(combined, { hasInterim: Boolean(latestInterimTranscript) });
     scheduleSilenceEvaluation();
